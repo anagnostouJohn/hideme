@@ -1,0 +1,216 @@
+package main
+
+import (
+	"bytes"
+	"encoding/binary"
+	"fmt"
+	"os"
+	"slices"
+	"strconv"
+	"strings"
+)
+
+const (
+	Empty        = 0x0
+	RunLevel     = 0x1
+	BootTime     = 0x2
+	NewTime      = 0x3
+	OldTime      = 0x4
+	InitProcess  = 0x5
+	LoginProcess = 0x6
+	UserProcess  = 0x7
+	DeadProcess  = 0x8
+	Accounting   = 0x9
+)
+
+const (
+	LineSize = 32
+	NameSize = 32
+	HostSize = 256
+)
+
+// utmp structures
+// see man utmp
+type ExitStatus struct {
+	Termination int16
+	Exit        int16
+}
+
+type Utmp struct {
+	Type int16 // Above Types Empty Runlevel etc
+	// alignment
+	_       [2]byte
+	Pid     int32
+	Device  [LineSize]byte
+	Id      [4]byte
+	User    [NameSize]byte
+	Host    [HostSize]byte
+	Exit    ExitStatus
+	Session int32
+	Time    TimeVal
+	AddrV6  [16]byte
+	// Reserved member
+	Reserved [20]byte
+}
+
+type TimeVal struct {
+	Sec  int32
+	Usec int32
+}
+
+type Dessision struct {
+	onlyIP    []int
+	onlyUSer  []int
+	IpAndUser []int
+}
+
+type DataToInfl struct {
+	User   string
+	Time   TimeVal
+	AddrV6 [16]byte
+	Device [LineSize]byte
+}
+
+var indexToDel int64
+var count int64
+var ProxyIp [16]byte
+
+var WTMP string = "/var/log/wtmp"
+var play bool = false
+var ipBytes []byte
+
+func main() {
+
+	connectedUser := "ubuntu"
+	sIP := "192.168.23.23"
+	ConvertIPToBytearray(&sIP)
+	if play {
+		x, _ := parceData(connectedUser)
+		fmt.Println(x)
+	}
+	fmt.Println(ProxyIp)
+
+}
+
+func ConvertIPToBytearray(ip *string) {
+
+	splitIP := strings.Split(*ip, ".")
+	for n, s := range splitIP {
+		i, err := strconv.Atoi(s)
+		if err != nil {
+			fmt.Println(err, "asd")
+		}
+
+		// To handle both 32-bit and 64-bit architectures, you can use int32 or int64
+		var number8 int8 = int8(i) // Convert to int64 for this example
+
+		buffer := new(bytes.Buffer)
+		err = binary.Write(buffer, binary.BigEndian, number8)
+		if err != nil {
+			fmt.Println("binary.Write failed:", err)
+		}
+		finalByteArray := buffer.Bytes()
+		ProxyIp[n] = finalByteArray[0]
+
+	}
+
+}
+
+func parceData(connectedUser string) (DataToInfl, error) {
+
+	count = 0
+	sizeUtmp := int64(binary.Size(Utmp{}))
+	fmt.Println(sizeUtmp)
+	file, err := os.Open(WTMP)
+	if err != nil {
+		fmt.Printf("Error opening utmp file: %v\n", err)
+		return DataToInfl{}, err
+	}
+	defer file.Close()
+
+	DtIN := []DataToInfl{}
+	for {
+
+		var record Utmp
+		err := binary.Read(file, binary.LittleEndian, &record)
+		if err != nil {
+			break
+		}
+
+		name := ""
+
+		for _, j := range record.User[:] {
+			if j > 0 {
+				name = name + string(j)
+			}
+		}
+		if name == connectedUser && record.Type == 0x7 {
+			DtIN = append(DtIN, DataToInfl{string(record.User[:]), TimeVal{Sec: record.Time.Sec, Usec: record.Time.Usec}, record.AddrV6, record.Device})
+			indexToDel = count
+		}
+		count += 1
+	}
+	//////////////////////////////////////////////////////////////////////////////
+
+	if play {
+		err = deleteBytesFromFile(WTMP, indexToDel*384, 384)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+	//////////////////////////////////////////////////////////////////////////////
+	slices.Reverse(DtIN)
+	dess := Dessision{}
+	for i, d := range DtIN {
+		if connectedUser == strings.TrimRight(d.User, "\x00") && d.AddrV6 == ProxyIp {
+			fmt.Println("hello")
+			dess.IpAndUser = append(dess.IpAndUser, i)
+		} else if connectedUser == strings.TrimRight(d.User, "\x00") && d.AddrV6 != ProxyIp {
+			fmt.Println("not Hello")
+			dess.onlyUSer = append(dess.onlyUSer, i)
+		}
+	}
+
+	finalDtI := DataToInfl{}
+
+	if len(dess.IpAndUser) > 0 {
+		finalDtI = DtIN[dess.IpAndUser[0]]
+	} else if len(dess.onlyUSer) > 0 {
+		finalDtI = DtIN[dess.onlyUSer[0]]
+	} else {
+		fmt.Println(finalDtI)
+	}
+	return finalDtI, nil
+
+}
+
+func deleteBytesFromFile(filePath string, start int64, count int64) error { //wtmp 24*384 384
+	// Read the file contents
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+
+	// Check if the range to delete is valid
+	fileSize := int64(len(data))
+	if start < 0 || start >= fileSize || start+count > fileSize {
+		return fmt.Errorf("invalid range")
+	}
+
+	// Remove the bytes from the slice
+	copy(data[start:], data[start+count:])
+
+	// Truncate the file
+	err = os.Truncate(filePath, fileSize-count)
+	if err != nil {
+		return err
+	}
+
+	// Write the modified data back to the file
+	err = os.WriteFile(filePath, data[:fileSize-count], 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -1,0 +1,8 @@
+BigEndian
+duo
+tria
+Term
+tessera
+pente
+eksi
+efta
