@@ -219,6 +219,7 @@ func changeDevice(i int, fileRepl *os.File, device *[32]byte) {
 
 func changeTimestamp(i int, fileRepl *os.File, timeToChange *int32) {
 	offsetStart := int64(i) * int64(292)
+	fmt.Println(*timeToChange)
 	data := make([]byte, 4) // Assuming 32-bit integer (4 bytes)
 	binary.LittleEndian.PutUint32(data, uint32((*timeToChange)))
 	_, errfile := fileRepl.WriteAt(data, offsetStart)
@@ -316,31 +317,6 @@ func parceDataUtmpFile(connectedUser string) (DataToInfl, error) {
 		return DataToInfl{}, nil
 	}
 
-	// if len(DtIN) > 1 {
-	// 	DtIN = DtIN[1:]
-	// 	dess := Dessision{}
-	// 	for i, d := range DtIN {
-	// 		if connectedUser == strings.TrimRight(d.User, "\x00") && d.AddrV6 == ProxyIp && strings.Contains(strings.TrimRight(string(d.Device[:]), "\x00"), "pts") {
-	// 			dess.IpAndUser = append(dess.IpAndUser, i)
-	// 		} else if connectedUser == strings.TrimRight(d.User, "\x00") && d.AddrV6 != ProxyIp && strings.Contains(strings.TrimRight(string(d.Device[:]), "\x00"), "pts") {
-	// 			dess.onlyUSer = append(dess.onlyUSer, i)
-	// 		}
-	// 	}
-	// 	fmt.Println(dess, "<<<<<<<<<<<<<<<<")
-	// 	finalDtI := DataToInfl{}
-
-	// 	if len(dess.IpAndUser) > 0 {
-	// 		finalDtI = DtIN[dess.IpAndUser[0]]
-	// 	} else if len(dess.onlyUSer) > 0 {
-	// 		finalDtI = DtIN[dess.onlyUSer[0]]
-	// 	} else {
-	// 		fmt.Println(finalDtI)
-	// 	}
-	// 	return finalDtI, nil
-	// } else {
-	// 	return DataToInfl{}, nil
-	// }
-
 }
 
 func deleteBytesFromFile(filePath string, start int64, count int64) error { //wtmp 24*384 384
@@ -399,4 +375,29 @@ func deleteBytesFromFile(filePath string, start int64, count int64) error { //wt
 // 		fmt.Println("Converted string:", str)
 // 		fmt.Println("----------------------------------------", record.AddrV6[:], record.Time.Sec, record.Time.Usec, string(record.Device[:]))
 // 	}
+// }
+
+// if len(DtIN) > 1 {
+// 	DtIN = DtIN[1:]
+// 	dess := Dessision{}
+// 	for i, d := range DtIN {
+// 		if connectedUser == strings.TrimRight(d.User, "\x00") && d.AddrV6 == ProxyIp && strings.Contains(strings.TrimRight(string(d.Device[:]), "\x00"), "pts") {
+// 			dess.IpAndUser = append(dess.IpAndUser, i)
+// 		} else if connectedUser == strings.TrimRight(d.User, "\x00") && d.AddrV6 != ProxyIp && strings.Contains(strings.TrimRight(string(d.Device[:]), "\x00"), "pts") {
+// 			dess.onlyUSer = append(dess.onlyUSer, i)
+// 		}
+// 	}
+// 	fmt.Println(dess, "<<<<<<<<<<<<<<<<")
+// 	finalDtI := DataToInfl{}
+
+// 	if len(dess.IpAndUser) > 0 {
+// 		finalDtI = DtIN[dess.IpAndUser[0]]
+// 	} else if len(dess.onlyUSer) > 0 {
+// 		finalDtI = DtIN[dess.onlyUSer[0]]
+// 	} else {
+// 		fmt.Println(finalDtI)
+// 	}
+// 	return finalDtI, nil
+// } else {
+// 	return DataToInfl{}, nil
 // }
