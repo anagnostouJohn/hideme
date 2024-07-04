@@ -42,7 +42,7 @@ func DeleteSessionAndSudoeSyslogAuthlog(pattern string, FileToDelLines string) e
 	}
 
 	err = CopyFile(FileToDelLines, stringSliceOfLogFile)
-
+	check.Check("error on Coping File at auth log", err)
 	return nil
 
 }

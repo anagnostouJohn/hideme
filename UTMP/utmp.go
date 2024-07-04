@@ -21,22 +21,12 @@ import (
 func ClearUTMP(ip, user string) []vars.DataLogin {
 	myDataLogin := []vars.DataLogin{}
 	d := GetWho(ip, user)
-	euid := os.Geteuid()
-	fmt.Println(euid)
-	fmt.Println(d)
 
 	d = ShortDataLogin(d)
 	fmt.Println(d)
-	if euid == 0 {
-		myDataLogin = append(myDataLogin, d[0], d[1])
-	} else {
-		myDataLogin = append(myDataLogin, d[0])
-	}
-	// Pouse()
+	myDataLogin = append(myDataLogin, d[0], d[1])
 	StartToClearUTMP()
-	// Pouse()
 	CheckMe(myDataLogin, ip, user)
-	time.Sleep(10 * time.Second)
 	return myDataLogin
 }
 

