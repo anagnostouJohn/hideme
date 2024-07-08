@@ -15,6 +15,16 @@ const (
 	Accounting   = 0x9
 )
 
+type ConnectedData struct {
+	IP                string
+	User              string
+	TimeLoginSSH      string
+	TimeLoginSSHEpoch int32
+	TimeProgrammStart string
+	SSHPTY            string
+	AppPTY            string
+}
+
 type Dessisions struct {
 	Dessision []int
 }
@@ -49,12 +59,13 @@ type ExitStatus struct {
 	Exit        int16
 }
 
-type DataLogin struct {
-	Username string
-	Datetime string
-	Ip       string
-	PTY      string
-}
+// type DataLogin struct {
+// 	Username       string
+// 	Datetime       string
+// 	Ip             string
+// 	PTY            string
+// 	UserPtyOrSpown bool
+// }
 
 // type Utmp struct {
 // 	Type int16

