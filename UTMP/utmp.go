@@ -10,7 +10,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"regexp"
 	"sort"
 	"strings"
 	check "test/CHECK"
@@ -18,21 +17,16 @@ import (
 	"time"
 )
 
-func ClearUTMP(ip, user string) []vars.DataLogin {
-	myDataLogin := []vars.DataLogin{}
-	d := GetWho(ip, user)
+func ClearUTMP(x vars.ConnectedData) {
+	ParceUtmpFile(x)
+	CheckMe(x)
+	StartToClearUTMP(x)
 
-	d = ShortDataLogin(d)
-	fmt.Println(d)
-	myDataLogin = append(myDataLogin, d[0], d[1])
-	StartToClearUTMP()
-	CheckMe(myDataLogin, ip, user)
-	return myDataLogin
 }
 
-func CheckMe(d []vars.DataLogin, ip, user string) {
+func CheckMe(x vars.ConnectedData) {
 	for {
-		res := CheckifLogout(d, ip, user)
+		res := CheckifLogout(x.SSHPTY)
 		if !res {
 
 			fmt.Println("I AM OUT")
@@ -44,64 +38,32 @@ func CheckMe(d []vars.DataLogin, ip, user string) {
 	}
 }
 
-func GetWho(ip, user string) []vars.DataLogin {
+func GetWho() []string {
 	cmd := exec.Command("who")
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
 		fmt.Println("Error executing command:", err)
-		return []vars.DataLogin{}
 	}
-
 	outSpit := strings.Split(out.String(), "\n")
-	pattern := fmt.Sprintf(`^(.*%s).*(pts/\d+).*(%s)`, user, ip)
-	re, err := regexp.Compile(pattern)
 	check.Check("Error on Compile PAtern UTMP", err)
-	d := []vars.DataLogin{}
-	for _, j := range outSpit {
-		match := re.MatchString(j)
-		if match {
-			sp := strings.Fields(j)
-			d = append(d, vars.DataLogin{Username: sp[0], Datetime: sp[2] + " " + sp[3], Ip: sp[4], PTY: sp[1]})
-		}
-	}
-	return d
+	return outSpit
 }
 
-func CheckifLogout(myData []vars.DataLogin, ip, user string) bool {
+func CheckifLogout(sshPTY string) bool {
 	// breakFor := false
 	// for {
-	whoData := GetWho(ip, user)
+	whoData := GetWho()
 	for _, j := range whoData {
-		for _, d := range myData {
-			if j.Datetime == d.Datetime && j.Ip == d.Ip && j.PTY == d.PTY && j.Username == d.Username {
-				return true
-			}
+		if strings.Contains(j, sshPTY) {
+			return true
 		}
 	}
 	return false
 }
 
-func ShortDataLogin(events []vars.DataLogin) []vars.DataLogin {
-
-	layout := "2006-01-02 15:04"
-
-	// Sort the slice of structs in descending order based on the Time field
-	sort.Slice(events, func(i, j int) bool {
-		timeI, err1 := time.Parse(layout, events[i].Datetime)
-		timeJ, err2 := time.Parse(layout, events[j].Datetime)
-		if err1 != nil || err2 != nil {
-			fmt.Println("Error parsing time string:", err1, err2)
-			return false
-		}
-		return timeI.After(timeJ)
-	})
-
-	return events
-}
-
-func StartToClearUTMP() {
+func StartToClearUTMP(x vars.ConnectedData) {
 
 	file, err := os.Open(vars.UTMP_FILE)
 
@@ -127,8 +89,8 @@ func StartToClearUTMP() {
 		host := bytes.Trim(entry.Host[:], "\x00")
 		fmt.Println(entry.Time, "<<<<<<<<<<<<<<<<<<<<<", line)
 		count += 1
-
-		if string(host) == "192.168.23.23" {
+		fmt.Println(string(host), x.IP, string(line), x.AppPTY, string(line), x.SSHPTY, "<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+		if string(host) == x.IP && (string(line) == x.AppPTY || string(line) == x.SSHPTY) {
 			found = append(found, count)
 			fmt.Println(count)
 		}
@@ -196,90 +158,41 @@ func Pouse() {
 	fmt.Println("Continuing...")
 }
 
-// package main
+func ParceUtmpFile(x vars.ConnectedData) (int32, error) {
 
-// import (
-// 	"fmt"
-// 	"sort"
-// 	"time"
-// )
+	file, err := os.Open(vars.UTMP_FILE)
+	if err != nil {
+		fmt.Println("Error opening utmp file:", err)
+		return 0, err
+	}
+	defer file.Close()
 
-// func main() {
-// 	// Define the date-time strings
-// 	timeStrings := []string{
-// 		"2024-06-26 09:21",
-// 		"2024-06-26 10:45",
-// 		"2024-06-25 15:30",
-// 		"2024-06-26 08:00",
-// 	}
+	utmpRecordSize := binary.Size(vars.Utmp{})
+	buf := make([]byte, utmpRecordSize)
+	var timeEpochSSH int32
+	for {
+		_, err := file.Read(buf)
+		if err != nil {
+			break
+		}
 
-// 	// Define the layout for parsing the date-time strings
-// 	layout := "2006-01-02 15:04"
+		var utmpRecord vars.Utmp
+		err = binary.Read(bytes.NewReader(buf), binary.LittleEndian, &utmpRecord)
+		if err != nil {
+			fmt.Println("Error reading utmp record:", err)
+			continue
+		}
 
-// 	// Parse the date-time strings into time.Time objects
-// 	times := make([]time.Time, len(timeStrings))
-// 	for i, timeStr := range timeStrings {
-// 		parsedTime, err := time.Parse(layout, timeStr)
-// 		if err != nil {
-// 			fmt.Println("Error parsing time string:", timeStr, "Error:", err)
-// 			return
-// 		}
-// 		times[i] = parsedTime
-// 	}
+		// Convert byte arrays to strings and print
+		// user := string(bytes.Trim(utmpRecord.User[:], "\x00"))
+		device := string(bytes.Trim(utmpRecord.Device[:], "\x00"))
+		host := string(bytes.Trim(utmpRecord.Host[:], "\x00"))
+		// loginTime := time.Unix(int64(), int64(utmpRecord.Time.Usec))
+		if x.IP == host && x.SSHPTY == device {
+			timeEpochSSH = utmpRecord.Time.Sec
+		}
 
-// 	// Sort the time.Time objects in descending order
-// 	sort.Slice(times, func(i, j int) bool {
-// 		return times[i].After(times[j])
-// 	})
-
-// 	// Convert the sorted time.Time objects back to strings
-// 	sortedTimeStrings := make([]string, len(times))
-// 	for i, t := range times {
-// 		sortedTimeStrings[i] = t.Format(layout)
-// 	}
-
-// 	// Print the sorted date-time strings
-// 	fmt.Println("Sorted date-time strings in descending order:")
-// 	for _, timeStr := range sortedTimeStrings {
-// 		fmt.Println(timeStr)
-// 	}
-// }
-
-// package main
-
-// import (
-// 	"fmt"
-// 	"time"
-// )
-
-// func main() {
-// 	// Define the date-time strings
-// 	timeStr1 := "2024-06-26 09:21"
-// 	timeStr2 := "2024-06-26 10:45"
-
-// 	// Define the layout for parsing the date-time strings
-// 	layout := "2006-01-02 15:04"
-
-// 	// Parse the date-time strings into time.Time objects
-// 	time1, err1 := time.Parse(layout, timeStr1)
-// 	time2, err2 := time.Parse(layout, timeStr2)
-
-// 	// Check for parsing errors
-// 	if err1 != nil {
-// 		fmt.Println("Error parsing timeStr1:", err1)
-// 		return
-// 	}
-// 	if err2 != nil {
-// 		fmt.Println("Error parsing timeStr2:", err2)
-// 		return
-// 	}
-
-// 	// Compare the two time.Time objects
-// 	if time1.After(time2) {
-// 		fmt.Println(timeStr1, "is the newest time.")
-// 	} else if time1.Before(time2) {
-// 		fmt.Println(timeStr2, "is the newest time.")
-// 	} else {
-// 		fmt.Println("Both times are equal.")
-// 	}
-// }
+		// fmt.Printf("User: %s, Device: %s, Host: %s, Login Time: %s\n", user, device, host, loginTime)
+	}
+	return timeEpochSSH, nil
+}

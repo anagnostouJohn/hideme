@@ -144,7 +144,7 @@ var SYSLOG string = "/var/log/syslog"
 var (
 	BrFile        string
 	BrFileHomeDir string
-	Host          string
+	Host          string /////
 	Port          string
 	User          string
 	Pass          string
