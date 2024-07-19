@@ -31,13 +31,11 @@ func DeleteSessionAndSudoeSyslogAuthlog(pattern string, FileToDelLines string) e
 		match := re.MatchString(j)
 		if match {
 			linesToDel = append(linesToDel, i)
-			fmt.Println(j, "  ", i)
 
 		}
 	}
 	sort.Sort(sort.Reverse(sort.IntSlice(linesToDel)))
 	for _, j := range linesToDel {
-		fmt.Println(j, "<<<<")
 		stringSliceOfLogFile = Remove(stringSliceOfLogFile, j)
 	}
 
@@ -48,6 +46,8 @@ func DeleteSessionAndSudoeSyslogAuthlog(pattern string, FileToDelLines string) e
 }
 
 func DeleteLineAuthLog(filePath string, SplitTimeStart, SplitTimeStop []string, ip *string) (string, error) {
+	fmt.Println(SplitTimeStart, SplitTimeStop, "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+
 	file, err := os.ReadFile(filePath)
 	if err != nil {
 		return "", err
@@ -62,24 +62,23 @@ func DeleteLineAuthLog(filePath string, SplitTimeStart, SplitTimeStop []string, 
 			matches := pattern.FindAllStringSubmatch(j, -1)
 			matchStartID = matches[0][1] // ID
 			indexToStartManipulate = i
-			fmt.Println(j, matches[0][1], i, "AAAAAA")
 			break
 		}
 	}
 
 	matchStopID := ""
-	for i, j := range stringSliceOfAothLog[indexToStartManipulate:] {
+	for _, j := range stringSliceOfAothLog[indexToStartManipulate:] {
 		if strings.Contains(j, "sshd") && strings.Contains(j, *ip) && strings.Contains(j, SplitTimeStop[1]) {
 			pattern := regexp.MustCompile(`sshd\[(\d+)\]`)
 			matches := pattern.FindAllStringSubmatch(j, -1)
 			matchStopID = matches[0][1]
-			fmt.Println(j, matches[0][1], i, "XAXAXAXAXAX")
 			break
 		}
 	}
 
 	IntlinesToDel := []int{}
 	StringLinesToDel := []string{}
+	fmt.Println(matchStartID, matchStopID, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 	GetIndexesToDelete(&stringSliceOfAothLog, &IntlinesToDel, &StringLinesToDel, matchStartID, false)
 	GetIndexesToDelete(&stringSliceOfAothLog, &IntlinesToDel, &StringLinesToDel, matchStopID, false)
 	// GetIndexesToDelete(&stringSliceOfAothLog, &IntlinesToDel, &StringLinesToDel, matchStopID)
@@ -94,7 +93,6 @@ func DeleteLineAuthLog(filePath string, SplitTimeStart, SplitTimeStop []string, 
 			systemdLogInd = matches[0][1]
 			pattern = regexp.MustCompile(`New session (\d+)`)
 			matchesSession := pattern.FindStringSubmatch(j)
-			fmt.Println(matchesSession, "AAAAA")
 			sessionId = matchesSession[1]
 			break
 		}

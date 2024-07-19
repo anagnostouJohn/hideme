@@ -16,10 +16,9 @@ func GetConectedData() (vars.ConnectedData, error) {
 	// Get the current process ID
 
 	pid := os.Getpid()
-	fmt.Printf("Current Process ID: %d\n", pid)
+
 	AppPTYName, err := getTerminalName(pid)
 	check.Check("Error on Getting Last PTY", err)
-	fmt.Println("LAST TTY", AppPTYName)
 	ppid, err := getParentProcessID(pid)
 
 	if err != nil {
@@ -40,7 +39,6 @@ func GetConectedData() (vars.ConnectedData, error) {
 		return vars.ConnectedData{}, err
 	}
 
-	fmt.Println(pid, ppid, grandppid)
 	originalUser := os.Getenv("SUDO_USER")
 	if originalUser == "" {
 		fmt.Println("The command was not run using sudo or the SUDO_USER environment variable is not set.")
@@ -53,11 +51,60 @@ func GetConectedData() (vars.ConnectedData, error) {
 	check.Check("Error On Getting Time", err)
 	SSHTime, err := GetTimes(SSHPTYName)
 	check.Check("Error On Getting Time", err)
-	ppts := vars.ConnectedData{IP: ip, User: originalUser, AppPTY: AppPTYName, SSHPTY: SSHPTYName, TimeLoginSSH: SSHTime, TimeProgrammStart: AppTime}
+	sshpid, firstSpownpid, err := GetTerminalSSHFirsConnectionPID(pid)
+	check.Check("Error On Getting SSH PID", err)
+	ppts := vars.ConnectedData{IP: ip, User: originalUser, AppPTY: AppPTYName, SSHPTY: SSHPTYName, TimeLoginSSH: SSHTime, TimeProgrammStart: AppTime, SSHPID: sshpid, FirstSpownID: firstSpownpid}
 
 	fmt.Printf("Terminal PID: %s Last Terminal PTY %s\n", SSHPTYName, AppPTYName)
+	fmt.Println("Process Pid :", pid, "Parent Pid :", ppid, "Grand Parent Pid ", grandppid)
 	return ppts, nil
 	// Pouse()
+
+}
+func getCommandName(pid int) (string, error) {
+	cmd := exec.Command("ps", "-p", strconv.Itoa(pid), "-o", "comm=")
+	fmt.Println(cmd)
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+
+	command := strings.TrimSpace(string(output))
+	return command, nil
+}
+
+func GetTerminalSSHFirsConnectionPID(pid int) (int, int, error) {
+	idToCheck := 0
+	for {
+		command, err := getCommandName(pid)
+		if err != nil {
+			fmt.Printf("Error getting command name for PID %d: %v\n", pid, err)
+			return 0, 0, err
+		}
+
+		fmt.Printf("PID: %d, Command: %s\n", pid, command)
+
+		if strings.Contains(command, "sshd") {
+			fmt.Printf("Found SSH process: PID %d\n", pid)
+			idToCheck, err = getParentProcessID(pid)
+			check.Check("Error on ID last", err)
+			break
+		}
+
+		ppid, err := getParentProcessID(pid)
+		if err != nil {
+			fmt.Printf("Error getting parent PID for PID %d: %v\n", pid, err)
+			return 0, 0, err
+		}
+
+		if ppid == 1 {
+			fmt.Println("Reached the init process, stopping search.")
+			break
+		}
+
+		pid = ppid
+	}
+	return pid, idToCheck, nil
 
 }
 

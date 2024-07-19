@@ -23,6 +23,9 @@ type ConnectedData struct {
 	TimeProgrammStart string
 	SSHPTY            string
 	AppPTY            string
+	SessionNumber     string
+	SSHPID            int
+	FirstSpownID      int
 }
 
 type Dessisions struct {
@@ -47,6 +50,7 @@ type DataToInfl struct {
 	TimeEnd TimeVal
 	AddrV6  [16]byte
 	Device  [LineSize]byte
+	ConData ConnectedData
 }
 
 type Lastlog struct {
@@ -140,6 +144,8 @@ var WTMP string = "/var/log/wtmp"
 var SYSLOG string = "/var/log/syslog"
 
 ///////////////////////////////////////
+
+var Sessions = "/run/systemd/sessions"
 
 var (
 	BrFile        string
