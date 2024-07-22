@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	authlog "test/AUTHLOG"
 	bf "test/BF"
 	check "test/CHECK"
 	getpty "test/GETPTY"
@@ -52,6 +53,8 @@ import (
 // FUCK FUCK FUCK I FOUND AN EASYER WAY AND MUCH MORE EFFECIENT  30% AT LEAST OF THE CODE GOES TO GARBAGE
 
 // WEAKEND IS COMING
+
+// 200 hundrend lines of pure pain just deleted
 
 var indexToDel int64
 var count int64
@@ -99,23 +102,28 @@ func main() {
 				connectedData.TimeLoginSSHEpoch = myepoch
 				sessNum, err := utmp.GetSessionId(connectedData.TimeLoginSSHEpoch)
 				check.Check("error On Getting Session Number", err)
-				connectedData.SessionNumber = sessNum
+				// connectedData.SessionNumber = sessNum
 				utmp.ClearUTMP(connectedData)
-
+				fmt.Println(sessNum, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+				time.Sleep(10 * time.Second)
 				dataToInfl, _ := parceDataWtmpFile(connectedData)
+				dataToInfl.ConData.SessionNumber = sessNum
+				fmt.Println(dataToInfl, "CXAXAAXAXAXXAXAAXAXXAXAXAAXAXAXXAAX")
+
+				// ConvertIPToBytearray(&connectedData.IP)
+
+				// lastlog.ChangeLastLog(&connectedData.IP, &dataToInfl, &vars.ConnectedUser)
+				// /////////////////////////////////////////////////////////////////////////////
+				// sessionStart := int(dataToInfl.Time.Sec)
+				// sessionStop := int(dataToInfl.TimeEnd.Sec)
+
+				// start, stop := authlog.GetTimeStamps(sessionStart, sessionStop)
+
+				// fmt.Println(sessionStart, sessionStop, connectedData.TimeLoginSSH, "AAAAAAAAAAAAAAAAAAAAASSSSSSSSSSSSS~~~~~~~~~~~~~~")
+				err = authlog.DeleteLineAuthLog(dataToInfl)
+				fmt.Println(err)
+
 				if false {
-
-					// ConvertIPToBytearray(&connectedData.IP)
-
-					// lastlog.ChangeLastLog(&connectedData.IP, &dataToInfl, &vars.ConnectedUser)
-					// /////////////////////////////////////////////////////////////////////////////
-					// sessionStart := int(dataToInfl.Time.Sec)
-					// sessionStop := int(dataToInfl.TimeEnd.Sec)
-
-					// start, stop := authlog.GetTimeStamps(sessionStart, sessionStop)
-
-					// fmt.Println(sessionStart, sessionStop, connectedData.TimeLoginSSH, "AAAAAAAAAAAAAAAAAAAAASSSSSSSSSSSSS~~~~~~~~~~~~~~")
-					// sessionID, err := authlog.DeleteLineAuthLog(vars.AUTH_LOG, start, stop, &connectedData.IP)
 					// check.Check("Delete Auth Log ", err)
 
 					// patternDeleteSession := fmt.Sprintf(`^(.*(%s|%s))(.*systemd).*(Session\s*%s|session-%s\.scope:|New session %s)`, start[1], stop[1], sessionID, sessionID, sessionID)
@@ -199,7 +207,6 @@ func parceDataWtmpFile(connectedUser vars.ConnectedData) (vars.DataToInfl, error
 				name = name + string(j)
 			}
 		}
-		fmt.Println(record, "<<<<<<<<<<<<<<<<PID<<<<<<<<<<<<<")
 		// bs, err := hex.DecodeString(record.Device)
 		if name == connectedUser.User && record.Type == 0x7 && connectedUser.SSHPTY == strings.TrimRight(string(record.Device[:]), "\x00") {
 

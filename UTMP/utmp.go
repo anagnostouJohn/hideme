@@ -21,7 +21,7 @@ import (
 )
 
 func ClearUTMP(x vars.ConnectedData) {
-	// ParceUtmpFile(x)
+
 	CheckMe(x)
 	StartToClearUTMP(x)
 
