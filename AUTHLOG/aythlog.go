@@ -10,15 +10,14 @@ import (
 	"strings"
 	check "test/CHECK"
 	vars "test/VARS"
-	"time"
 )
 
 // This shit deletes auth log logs.
 // Masturbation goes cloud
-var systemdLogInd string
-var sessionId string
-var indexToStartForSystemLog int
-var indexToStartManipulate int
+// var systemdLogInd string
+// var sessionId string
+// var indexToStartForSystemLog int
+// var indexToStartManipulate int
 
 func DeleteSessionAndSudoeSyslogAuthlog(pattern string, FileToDelLines string) error {
 	file, err := os.ReadFile(FileToDelLines)
@@ -47,10 +46,10 @@ func DeleteSessionAndSudoeSyslogAuthlog(pattern string, FileToDelLines string) e
 
 }
 
-func DeleteLineAuthLog(dataToInf vars.DataToInfl) error {
+func DeleteLineAuthLogAndSyslog(filename string, dataToInf vars.DataToInfl) error {
 	fmt.Println(dataToInf, "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 
-	file, err := os.ReadFile(vars.AUTH_LOG)
+	file, err := os.ReadFile(filename)
 	if err != nil {
 		return err
 	}
@@ -63,12 +62,12 @@ func DeleteLineAuthLog(dataToInf vars.DataToInfl) error {
 	}
 	IntlinesToDel := []int{}
 	exeName := filepath.Base(exePath)
-	p := fmt.Sprintf(`(?i)sshd\[%s\]:|sshd\[%s\]:`, strconv.Itoa(dataToInf.ConData.FirstSpownID), strconv.Itoa(dataToInf.ConData.SSHPID))
-	fmt.Println(p, "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+	p := fmt.Sprintf(`(?i)sshd\[%s\]:|sshd\[%s\]:|Started Session %s of User`, strconv.Itoa(dataToInf.ConData.FirstSpownID), strconv.Itoa(dataToInf.ConData.SSHPID), dataToInf.ConData.SessionNumber)
 	// check.Check("error on creating Regex for sshd", err)
 	patternSSHID := regexp.MustCompile(p)
-	ps := fmt.Sprintf(`|TTY=%s|TTY=%s|./%s|session opened|session closed|pam_unix(sshd:session):|Session %s logged out`, dataToInf.ConData.AppPTY, dataToInf.ConData.SSHPTY, exeName, strconv.Itoa(dataToInf.ConData.SSHPID))
+	ps := fmt.Sprintf(`session-%s.scope|TTY=%s|TTY=%s|./%s|session opened|session closed|pam_unix(sshd:session):|Session %s logged out`, dataToInf.ConData.SessionNumber, dataToInf.ConData.AppPTY, dataToInf.ConData.SSHPTY, exeName, strconv.Itoa(dataToInf.ConData.SSHPID))
 	patternSecond := regexp.MustCompile(ps)
+	fmt.Println(p, "\n", ps)
 	// patternsessionID := regexp.MustCompile(`sshd\[(\d+)\]`)
 	for i, j := range stringSliceOfAothLog {
 		matches := patternSSHID.FindAllStringSubmatch(j, -1)
@@ -77,74 +76,22 @@ func DeleteLineAuthLog(dataToInf vars.DataToInfl) error {
 			// fmt.Println(j, i)
 		}
 	}
-	fmt.Println(IntlinesToDel)
+	fmt.Println(IntlinesToDel, "<<DELETE")
 	for i, j := range stringSliceOfAothLog[IntlinesToDel[0]:] {
 		matches := patternSecond.FindAllStringSubmatch(j, -1)
 		if len(matches) > 0 {
 			IntlinesToDel = append(IntlinesToDel, i+IntlinesToDel[0])
 			// fmt.Println(j, i)
 		}
-		// fmt.Println(IntlinesToDel)
-		// matches := patternSSHID.FindAllStringSubmatch(j, -1)
-
-		fmt.Println(patternSecond, i+IntlinesToDel[0]+1)
 	}
 
 	sort.Sort(sort.Reverse(sort.IntSlice(IntlinesToDel)))
-	// fmt.Print("Eftasae")
-	// time.Sleep(10 * time.Second)
-	// matchStartID := ""
-	// for i, j := range stringSliceOfAothLog {
-	// 	if strings.Contains(j, "sshd") && strings.Contains(j, *ip) && strings.Contains(j, SplitTimeStart[1]) {
-	// 		pattern := regexp.MustCompile(`sshd\[(\d+)\]`)
-	// 		matches := pattern.FindAllStringSubmatch(j, -1)
-	// 		matchStartID = matches[0][1] // ID
-	// 		indexToStartManipulate = i
-	// 		break
-	// 	}
-	// }
 
-	// matchStopID := ""
-	// for _, j := range stringSliceOfAothLog[indexToStartManipulate:] {
-	// 	if strings.Contains(j, "sshd") && strings.Contains(j, *ip) && strings.Contains(j, SplitTimeStop[1]) {
-	// 		pattern := regexp.MustCompile(`sshd\[(\d+)\]`)
-	// 		matches := pattern.FindAllStringSubmatch(j, -1)
-	// 		matchStopID = matches[0][1]
-	// 		break
-	// 	}
-	// }
-
-	// IntlinesToDel := []int{}
-	// StringLinesToDel := []string{}
-	// fmt.Println(matchStartID, matchStopID, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-	// GetIndexesToDelete(&stringSliceOfAothLog, &IntlinesToDel, &StringLinesToDel, matchStartID, false)
-	// GetIndexesToDelete(&stringSliceOfAothLog, &IntlinesToDel, &StringLinesToDel, matchStopID, false)
-	// // GetIndexesToDelete(&stringSliceOfAothLog, &IntlinesToDel, &StringLinesToDel, matchStopID)
-
-	// for _, j := range stringSliceOfAothLog[indexToStartForSystemLog:] {
-	// 	pattern := regexp.MustCompile(`systemd-logind\[(\d+)\]: (New session|Session \d+ )`)
-	// 	matches := pattern.FindAllStringSubmatch(j, -1)
-
-	// 	if len(matches) > 0 {
-	// 		pattern := regexp.MustCompile(`systemd-logind\[(\d+)\]`)
-	// 		matches := pattern.FindAllStringSubmatch(j, -1)
-	// 		systemdLogInd = matches[0][1]
-	// 		pattern = regexp.MustCompile(`New session (\d+)`)
-	// 		matchesSession := pattern.FindStringSubmatch(j)
-	// 		sessionId = matchesSession[1]
-	// 		break
-	// 	}
-	// }
-	// patternSystemLogInd := fmt.Sprintf(`^.*systemd-logind\[%s\].*(Session %s logged out|Removed session %s|New session %s)`, systemdLogInd, sessionId, sessionId, sessionId)
-	// GetIndexesToDelete(&stringSliceOfAothLog, &IntlinesToDel, &StringLinesToDel, patternSystemLogInd, true)
-
-	// sort.Sort(sort.Reverse(sort.IntSlice(IntlinesToDel)))
-	// fmt.Printf("Final Data: StartLogin %s, EndLogin: %s systemLoginInId :%s, Lines To Del %v, Session ID ,%s \n", matchStartID, matchStopID, systemdLogInd, IntlinesToDel, sessionId)
 	for _, index := range IntlinesToDel {
 		stringSliceOfAothLog = Remove(stringSliceOfAothLog, index)
 	}
 
-	err = CopyFile(vars.AUTH_LOG, stringSliceOfAothLog)
+	err = CopyFile(filename, stringSliceOfAothLog)
 	check.Check("Error on Copy file at AuthLog", err)
 	return nil
 	// return nil
@@ -165,6 +112,78 @@ func CopyFile(filepath string, strings []string) error {
 	return nil
 }
 
+func Remove(slice []string, index int) []string {
+	if index < 0 || index >= len(slice) {
+		fmt.Println("Index out of range")
+		return slice
+	}
+	return append(slice[:index], slice[index+1:]...)
+}
+
+// func GetTimeStamps(sessionStart, sessionStop int) ([]string, []string) {
+// 	tStart := time.Unix(int64(sessionStart), 0).UTC()
+// 	localTimeStart := tStart.Local()
+// 	SplitTimeStart := strings.Split(localTimeStart.Format("2006-01-02 15:04:05"), " ")
+
+// 	tStop := time.Unix(int64(sessionStop), 0).UTC()
+// 	localTimeStop := tStop.Local()
+// 	SplitTimeStop := strings.Split(localTimeStop.Format("2006-01-02 15:04:05"), " ")
+// 	fmt.Println(SplitTimeStart, SplitTimeStop)
+
+// 	return SplitTimeStart, SplitTimeStop
+
+// }
+
+// fmt.Print("Eftasae")
+// time.Sleep(10 * time.Second)
+// matchStartID := ""
+// for i, j := range stringSliceOfAothLog {
+// 	if strings.Contains(j, "sshd") && strings.Contains(j, *ip) && strings.Contains(j, SplitTimeStart[1]) {
+// 		pattern := regexp.MustCompile(`sshd\[(\d+)\]`)
+// 		matches := pattern.FindAllStringSubmatch(j, -1)
+// 		matchStartID = matches[0][1] // ID
+// 		indexToStartManipulate = i
+// 		break
+// 	}
+// }
+
+// matchStopID := ""
+// for _, j := range stringSliceOfAothLog[indexToStartManipulate:] {
+// 	if strings.Contains(j, "sshd") && strings.Contains(j, *ip) && strings.Contains(j, SplitTimeStop[1]) {
+// 		pattern := regexp.MustCompile(`sshd\[(\d+)\]`)
+// 		matches := pattern.FindAllStringSubmatch(j, -1)
+// 		matchStopID = matches[0][1]
+// 		break
+// 	}
+// }
+
+// IntlinesToDel := []int{}
+// StringLinesToDel := []string{}
+// fmt.Println(matchStartID, matchStopID, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+// GetIndexesToDelete(&stringSliceOfAothLog, &IntlinesToDel, &StringLinesToDel, matchStartID, false)
+// GetIndexesToDelete(&stringSliceOfAothLog, &IntlinesToDel, &StringLinesToDel, matchStopID, false)
+// // GetIndexesToDelete(&stringSliceOfAothLog, &IntlinesToDel, &StringLinesToDel, matchStopID)
+
+// for _, j := range stringSliceOfAothLog[indexToStartForSystemLog:] {
+// 	pattern := regexp.MustCompile(`systemd-logind\[(\d+)\]: (New session|Session \d+ )`)
+// 	matches := pattern.FindAllStringSubmatch(j, -1)
+
+// 	if len(matches) > 0 {
+// 		pattern := regexp.MustCompile(`systemd-logind\[(\d+)\]`)
+// 		matches := pattern.FindAllStringSubmatch(j, -1)
+// 		systemdLogInd = matches[0][1]
+// 		pattern = regexp.MustCompile(`New session (\d+)`)
+// 		matchesSession := pattern.FindStringSubmatch(j)
+// 		sessionId = matchesSession[1]
+// 		break
+// 	}
+// }
+// patternSystemLogInd := fmt.Sprintf(`^.*systemd-logind\[%s\].*(Session %s logged out|Removed session %s|New session %s)`, systemdLogInd, sessionId, sessionId, sessionId)
+// GetIndexesToDelete(&stringSliceOfAothLog, &IntlinesToDel, &StringLinesToDel, patternSystemLogInd, true)
+
+// sort.Sort(sort.Reverse(sort.IntSlice(IntlinesToDel)))
+// fmt.Printf("Final Data: StartLogin %s, EndLogin: %s systemLoginInId :%s, Lines To Del %v, Session ID ,%s \n", matchStartID, matchStopID, systemdLogInd, IntlinesToDel, sessionId)
+
 // func GetIndexesToDelete(stringSliceOfAothLog *[]string, IntlinesToDel *[]int, StringLinesToDel *[]string, matchString string, getSession bool) {
 
 // 	re := regexp.MustCompile(matchString)
@@ -179,25 +198,3 @@ func CopyFile(filepath string, strings []string) error {
 // 		}
 // 	}
 // }
-
-func Remove(slice []string, index int) []string {
-	if index < 0 || index >= len(slice) {
-		fmt.Println("Index out of range")
-		return slice
-	}
-	return append(slice[:index], slice[index+1:]...)
-}
-
-func GetTimeStamps(sessionStart, sessionStop int) ([]string, []string) {
-	tStart := time.Unix(int64(sessionStart), 0).UTC()
-	localTimeStart := tStart.Local()
-	SplitTimeStart := strings.Split(localTimeStart.Format("2006-01-02 15:04:05"), " ")
-
-	tStop := time.Unix(int64(sessionStop), 0).UTC()
-	localTimeStop := tStop.Local()
-	SplitTimeStop := strings.Split(localTimeStop.Format("2006-01-02 15:04:05"), " ")
-	fmt.Println(SplitTimeStart, SplitTimeStop)
-
-	return SplitTimeStart, SplitTimeStop
-
-}

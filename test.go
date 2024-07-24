@@ -87,6 +87,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 func main() {
@@ -98,4 +99,6 @@ func main() {
 
 	exeName := filepath.Base(exePath)
 	fmt.Println("Executable Name:", exeName)
+	time.Sleep(10 * time.Second)
+	fmt.Println("Ending")
 }

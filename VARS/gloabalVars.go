@@ -160,3 +160,6 @@ var (
 	Combo         bool
 	Destr         bool
 )
+
+// const LASTLOG_FILE = "/var/log/lastlog"
+// const LINE_LENGTH = 292 // Size of each entry in lastlog (defined in /usr/include/lastlog.h)

