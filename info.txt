@@ -12,3 +12,6 @@ echo > /var/log/btmp
 
 
 echo > /var/log/lastlog
+
+
+sudo nohup ./main   

@@ -129,7 +129,6 @@ func changeDevice(i int, fileRepl *os.File, device *[32]byte) {
 
 func changeTimestamp(i int, fileRepl *os.File, timeToChange *int32) {
 	offsetStart := int64(i) * int64(292)
-	fmt.Println(*timeToChange)
 	data := make([]byte, 4) // Assuming 32-bit integer (4 bytes)
 	binary.LittleEndian.PutUint32(data, uint32((*timeToChange)))
 	_, errfile := fileRepl.WriteAt(data, offsetStart)

@@ -25,7 +25,6 @@ func DeleteSessionAndSudoeSyslogAuthlog(pattern string, FileToDelLines string) e
 		return err
 	}
 	stringSliceOfLogFile := strings.Split(string(file), "\n")
-	fmt.Println(pattern)
 	re := regexp.MustCompile(pattern)
 	linesToDel := []int{}
 	for i, j := range stringSliceOfLogFile {
@@ -47,7 +46,6 @@ func DeleteSessionAndSudoeSyslogAuthlog(pattern string, FileToDelLines string) e
 }
 
 func DeleteLineAuthLogAndSyslog(filename string, dataToInf vars.DataToInfl) error {
-	fmt.Println(dataToInf, "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 
 	file, err := os.ReadFile(filename)
 	if err != nil {
@@ -67,7 +65,7 @@ func DeleteLineAuthLogAndSyslog(filename string, dataToInf vars.DataToInfl) erro
 	patternSSHID := regexp.MustCompile(p)
 	ps := fmt.Sprintf(`session-%s.scope|TTY=%s|TTY=%s|./%s|session opened|session closed|pam_unix(sshd:session):|Session %s logged out`, dataToInf.ConData.SessionNumber, dataToInf.ConData.AppPTY, dataToInf.ConData.SSHPTY, exeName, strconv.Itoa(dataToInf.ConData.SSHPID))
 	patternSecond := regexp.MustCompile(ps)
-	fmt.Println(p, "\n", ps)
+
 	// patternsessionID := regexp.MustCompile(`sshd\[(\d+)\]`)
 	for i, j := range stringSliceOfAothLog {
 		matches := patternSSHID.FindAllStringSubmatch(j, -1)
@@ -76,7 +74,7 @@ func DeleteLineAuthLogAndSyslog(filename string, dataToInf vars.DataToInfl) erro
 			// fmt.Println(j, i)
 		}
 	}
-	fmt.Println(IntlinesToDel, "<<DELETE")
+
 	for i, j := range stringSliceOfAothLog[IntlinesToDel[0]:] {
 		matches := patternSecond.FindAllStringSubmatch(j, -1)
 		if len(matches) > 0 {

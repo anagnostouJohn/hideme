@@ -85,20 +85,21 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"time"
 )
 
 func main() {
-	exePath, err := os.Executable()
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
 
-	exeName := filepath.Base(exePath)
-	fmt.Println("Executable Name:", exeName)
-	time.Sleep(10 * time.Second)
-	fmt.Println("Ending")
+	x := []string{"1", "a", "f", "h", "r", "y", "s", "u", "j", "a", "b", "w", "q"}
+	fmt.Println(len(x))
+	x = Remove(x, 3)
+	fmt.Println(x, "<<<<>>>", len(x))
+
+}
+
+func Remove(slice []string, index int) []string {
+	if index < 0 || index >= len(slice) {
+		fmt.Println("Index out of range")
+		return slice
+	}
+	return append(slice[:index], slice[index+1:]...)
 }

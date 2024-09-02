@@ -187,7 +187,6 @@ func GetSessionId(epoch int32) (string, error) {
 	check.Check("Error on Opening Folder Session", err)
 	intNum := int(epoch)
 	strNum := strconv.Itoa(intNum)
-	fmt.Println("Converted string:", strNum)
 	for _, f := range files {
 		if f.Type().IsRegular() {
 			fp := filepath.Join(vars.Sessions, f.Name())
@@ -195,9 +194,7 @@ func GetSessionId(epoch int32) (string, error) {
 			check.Check("Error on Reading File :", err)
 			fileContent := strings.Split(string(c), "\n")
 			for _, j := range fileContent {
-				fmt.Println(j, strNum)
 				if strings.Contains(j, strNum) {
-					fmt.Println(f.Name(), "Found")
 					return f.Name(), nil
 				}
 			}

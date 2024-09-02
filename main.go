@@ -96,14 +96,15 @@ func main() {
 				flag.Parse()
 				myepoch, err := utmp.ParceUtmpFileToGetEpoch(connectedData)
 
-				fmt.Println(myepoch, "EPOCH")
 				check.Check("Error On parshing UTMP file for EPOCH", err)
 				connectedData.TimeLoginSSHEpoch = myepoch
 				sessNum, err := utmp.GetSessionId(connectedData.TimeLoginSSHEpoch)
 				check.Check("error On Getting Session Number", err)
 				utmp.ClearUTMP(connectedData)
-				time.Sleep(5 * time.Second)
+				time.Sleep(2 * time.Second)
 				dataToInfl, _ := parceDataWtmpFile(connectedData)
+
+				dataToInfl.ConData = connectedData
 				dataToInfl.ConData.SessionNumber = sessNum
 
 				// ConvertIPToBytearray(&connectedData.IP)
@@ -116,6 +117,7 @@ func main() {
 				// start, stop := authlog.GetTimeStamps(sessionStart, sessionStop)
 
 				// fmt.Println(sessionStart, sessionStop, connectedData.TimeLoginSSH, "AAAAAAAAAAAAAAAAAAAAASSSSSSSSSSSSS~~~~~~~~~~~~~~")
+
 				err = authlog.DeleteLineAuthLogAndSyslog(vars.AUTH_LOG, dataToInfl)
 				err = authlog.DeleteLineAuthLogAndSyslog(vars.SYSLOG, dataToInfl)
 				fmt.Println(err)
@@ -158,8 +160,6 @@ func ConvertIPToBytearray(ip *string) {
 func parceDataWtmpFile(connectedUser vars.ConnectedData) (vars.DataToInfl, error) {
 
 	count = 0
-	// sizeUtmp := int64(binary.Size(Utmp{}))
-	// fmt.Println(sizeUtmp)
 	file, err := os.Open(vars.WTMP)
 	if err != nil {
 		fmt.Printf("Error opening utmp file: %v\n", err)

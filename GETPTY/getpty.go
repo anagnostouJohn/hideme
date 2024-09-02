@@ -55,15 +55,12 @@ func GetConectedData() (vars.ConnectedData, error) {
 	check.Check("Error On Getting SSH PID", err)
 	ppts := vars.ConnectedData{IP: ip, User: originalUser, AppPTY: AppPTYName, SSHPTY: SSHPTYName, TimeLoginSSH: SSHTime, TimeProgrammStart: AppTime, SSHPID: sshpid, FirstSpownID: firstSpownpid}
 
-	fmt.Printf("Terminal PID: %s Last Terminal PTY %s\n", SSHPTYName, AppPTYName)
-	fmt.Println("Process Pid :", pid, "Parent Pid :", ppid, "Grand Parent Pid ", grandppid)
 	return ppts, nil
 	// Pouse()
 
 }
 func getCommandName(pid int) (string, error) {
 	cmd := exec.Command("ps", "-p", strconv.Itoa(pid), "-o", "comm=")
-	fmt.Println(cmd)
 	output, err := cmd.Output()
 	if err != nil {
 		return "", err
@@ -81,9 +78,6 @@ func GetTerminalSSHFirsConnectionPID(pid int) (int, int, error) {
 			fmt.Printf("Error getting command name for PID %d: %v\n", pid, err)
 			return 0, 0, err
 		}
-
-		fmt.Printf("PID: %d, Command: %s\n", pid, command)
-
 		if strings.Contains(command, "sshd") {
 			fmt.Printf("Found SSH process: PID %d\n", pid)
 			idToCheck, err = getParentProcessID(pid)
