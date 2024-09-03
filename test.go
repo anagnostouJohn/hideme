@@ -84,22 +84,94 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"log"
+
+	"golang.org/x/crypto/ssh"
 )
+
+var b bytes.Buffer
 
 func main() {
 
-	x := []string{"1", "a", "f", "h", "r", "y", "s", "u", "j", "a", "b", "w", "q"}
-	fmt.Println(len(x))
-	x = Remove(x, 3)
-	fmt.Println(x, "<<<<>>>", len(x))
+	session, err := CreateConn()
+	if err != nil {
+		log.Fatalf("Failed to create SSH session: %v", err)
+	}
+	defer session.Close()
+
+	// Create a pipe to send commands to the session
+	stdin, err := session.StdinPipe()
+	if err != nil {
+		log.Fatalf("Failed to create stdin pipe: %v", err)
+	}
+
+	var b bytes.Buffer
+	session.Stdout = &b
+	session.Stderr = &b
+
+	// Start the shell
+	if err := session.Shell(); err != nil {
+		log.Fatalf("Failed to start shell: %v", err)
+	}
+
+	// Feed commands to the session
+	commands := []string{
+		"echo test >> test.txt",
+		"echo my test >> test.txt",
+		"echo testme >> test.txt",
+		"cat test.txt", // This will allow us to see the contents of test.txt in the buffer
+	}
+
+	for _, cmd := range commands {
+		fmt.Fprintln(stdin, cmd)
+	}
+
+	// Optionally, close the stdin pipe when done
+	stdin.Close()
+
+	// Wait for the session to finish
+	if err := session.Wait(); err != nil && err != io.EOF {
+		log.Fatalf("Failed to wait for session: %v", err)
+	}
+
+	// Print the output captured in the buffer
+	fmt.Println(b.String())
+
+	// err = s.Run("echo test >> test.txt")
+	// fmt.Println(err, "1")
+	// err = s.Run("echo my test >> test.txt")
+	// fmt.Println(err, "2")
+	// f := fmt.Sprintf("echo %s >> test.txt", "testme")
+	// err = s.Run(f)
+	// fmt.Println(err, "3")
+	// s.Run("echo ")
+
+	// fmt.Println(b.String())
 
 }
 
-func Remove(slice []string, index int) []string {
-	if index < 0 || index >= len(slice) {
-		fmt.Println("Index out of range")
-		return slice
+func CreateConn() (*ssh.Session, error) {
+	config := &ssh.ClientConfig{
+		User: "wine",
+		Auth: []ssh.AuthMethod{
+			ssh.Password("1234"),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-	return append(slice[:index], slice[index+1:]...)
+	hostPort := fmt.Sprintf("%s:%s", "192.168.23.89", "22")
+	client, err := ssh.Dial("tcp", hostPort, config)
+
+	if err != nil {
+
+		return nil, err
+	}
+
+	session, err := client.NewSession()
+	if err != nil {
+		return nil, err
+	}
+	return session, nil
 }

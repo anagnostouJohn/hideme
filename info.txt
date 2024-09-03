@@ -15,3 +15,7 @@ echo > /var/log/lastlog
 
 
 sudo nohup ./main   
+
+
+
+scp wine@192.168.23.89:/home/wine/Desktop/L.zip /home/ubuntu/go/src/test/

