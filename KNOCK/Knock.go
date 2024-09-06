@@ -1,4 +1,4 @@
-package main
+package knock
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 )
 
 // knock sends a TCP knock to a specific port on a host
-func knock(host string, port int, timeout time.Duration) error {
+func Knock(host string, port int, timeout time.Duration) error {
 	// Create a TCP address from the host and port
 	address := fmt.Sprintf("%s:%d", host, port)
 
@@ -23,30 +23,31 @@ func knock(host string, port int, timeout time.Duration) error {
 }
 
 // sendKnocks sends a sequence of knocks to a host
-func sendKnocks(host string, ports []int, delay time.Duration) {
-	for _, port := range ports {
-		err := knock(host, port, 5*time.Second)
-		if err != nil {
-			fmt.Printf("Failed to knock on port %d: %s\n", port, err)
-		} else {
-			fmt.Printf("Knocked on port %d successfully\n", port)
+func SendKnocks(host string, ports []int, Timedelay int) {
+	for {
+		for _, port := range ports {
+			err := Knock(host, port, 5*time.Second)
+			if err != nil {
+				fmt.Printf("Failed to knock on port %d: %s\n", port, err)
+			} else {
+				fmt.Printf("Knocked on port %d successfully\n", port)
+			}
+			// Wait for the specified delay before the next knock
+			time.Sleep(time.Duration(Timedelay) * time.Second)
 		}
-
-		// Wait for the specified delay before the next knock
-		time.Sleep(delay)
 	}
 }
 
-func main() {
-	// The host to knock on
-	host := "192.168.23.61" // Replace with the actual IP or hostname
+// func main() {
+// 	// The host to knock on
+// 	host := "192.168.23.61" // Replace with the actual IP or hostname
 
-	// The sequence of ports to knock
-	ports := []int{7000, 8000, 9000}
+// 	// The sequence of ports to knock
+// 	ports := []int{7000, 8000, 9000}
 
-	// Delay between knocks
-	delay := 1 * time.Second
+// 	// Delay between knocks
+// 	delay := 1 * time.Second
 
-	// Send the knocks
-	sendKnocks(host, ports, delay)
-}
+// 	// Send the knocks
+// 	SendKnocks(host, ports, delay)
+// }

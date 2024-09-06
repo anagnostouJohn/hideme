@@ -148,7 +148,8 @@ var SYSLOG string = "/var/log/syslog"
 var Sessions = "/run/systemd/sessions"
 
 // var (
-// 	BrFile        string
+//
+//	BrFile        string
 var BrFileHomeDir string
 
 // 	Host          string /////
@@ -181,6 +182,7 @@ type AppFlags struct {
 	BrFile        string
 	ConnectedUser string
 	Threads       int
+	Knock         []int
 }
 
 // flag.BoolVar(&vars.Destr, "d", false, "Self Destruct")

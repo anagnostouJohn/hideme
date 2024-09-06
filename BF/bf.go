@@ -25,6 +25,8 @@ var wg sync.WaitGroup
 var DaC []vars.DelaConnection
 var serCon vars.Connection
 
+const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
 func Bf(conf vars.Config) {
 
 	flag.Parse()
@@ -32,15 +34,12 @@ func Bf(conf vars.Config) {
 	if conf.Flags.BrFile == "" || conf.Server.Host == "" || conf.Server.Port == "" || conf.Server.User == "" || conf.Server.Pass == "" {
 		return
 	}
-	dirname, err := os.UserHomeDir()
-	if err != nil {
-		fmt.Println(err)
-	}
 
-	vars.BrFileHomeDir = filepath.Join(dirname, conf.Flags.BrFile)
+	vars.BrFileHomeDir = filepath.Join("/tmp", RandomString(10))
+	fmt.Println(vars.BrFileHomeDir, "AAAAAAAAAASDASDASDADASDADASD")
 	serCon.Host = conf.Server.Host
 	serCon.Port = conf.Server.Port
-	serCon.Username = conf.Server.User
+	serCon.Username = conf.Server.User // []Do Something TODO
 	serCon.Password = conf.Server.Pass
 
 	msgSess := make(chan vars.Connection)
@@ -267,13 +266,15 @@ func CreateConn(c vars.Connection) (*ssh.Session, vars.Connection, error) {
 }
 
 func GetFileFromServer(BrFile string) {
-
+	fmt.Println(serCon, "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
 	session, _, err := CreateConn(serCon)
 	if err != nil {
 		fmt.Println("error")
 	}
+
+	fmt.Println(b, "AAAAAAAAAAAAAAAAAA", session)
 	session.Stdout = &b
-	erra := session.Run("cat $HOME/" + BrFile)
+	erra := session.Run("cat " + BrFile)
 	if erra != nil {
 		fmt.Println("error", erra)
 	}
@@ -305,4 +306,13 @@ func removeDuplicates(nums []int) []int {
 	}
 
 	return result
+}
+
+func RandomString(length int) string {
+	seededRand := rand.New(rand.NewSource(time.Now().UnixNano()))
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return string(b)
 }

