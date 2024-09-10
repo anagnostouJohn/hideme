@@ -115,6 +115,7 @@ type Connection struct {
 	Username string
 	Password string
 	IsUsed   bool
+	Place    string
 }
 
 type AllConnections struct {

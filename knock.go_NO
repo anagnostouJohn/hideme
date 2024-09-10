@@ -1,4 +1,4 @@
-package knock
+package main
 
 import (
 	"fmt"
@@ -49,10 +49,10 @@ func SendIAmAlive(host string, port int, delay time.Duration) {
 
 }
 
-func SendKnock(data, host string) {
-	data = "1-833-2END" //TODO remove
+func main() {
+
 	// The host to knock on
-	host = "192.168.23.61" // TODO Replace with the actual IP or hostname
+	host := "192.168.23.61" // Replace with the actual IP or hostname
 
 	// The sequence of ports to knock
 	// ports := []int{7666, 8666}
@@ -60,8 +60,8 @@ func SendKnock(data, host string) {
 	// Delay between knocks
 	delay := 500 * time.Millisecond
 	x := []string{}
-	// go SendIAmAlive(host, 2, delay)
-
+	go SendIAmAlive(host, 2, delay)
+	name := "1-833-2END"
 	// Convert string to bytes
 	byteArray := []byte(name)
 

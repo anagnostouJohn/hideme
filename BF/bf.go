@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"slices"
 	"sort"
+	"strconv"
 	"sync"
 	vars "test/VARS"
 	"time"
@@ -36,7 +37,6 @@ func Bf(conf vars.Config) {
 	}
 
 	vars.BrFileHomeDir = filepath.Join("/tmp", RandomString(10))
-	fmt.Println(vars.BrFileHomeDir, "AAAAAAAAAASDASDASDADASDADASD")
 	serCon.Host = conf.Server.Host
 	serCon.Port = conf.Server.Port
 	serCon.Username = conf.Server.User // []Do Something TODO
@@ -93,11 +93,12 @@ func ReadCsv(msgSess, msgErr chan vars.Connection, Combo, Destr bool, Threads in
 	Passes := []string{}
 	c := vars.Connection{}
 	if Combo {
-		for _, eachrecord := range records[1:] {
+		for i, eachrecord := range records[1:] {
 			c.Host = eachrecord[0]
 			c.Username = eachrecord[1]
 			c.Password = eachrecord[2]
 			c.Port = eachrecord[3]
+			c.Place = strconv.Itoa(i+1) + "END"
 			allC.Conn = append(allC.Conn, c)
 		}
 
@@ -118,11 +119,11 @@ func ReadCsv(msgSess, msgErr chan vars.Connection, Combo, Destr bool, Threads in
 			}
 		}
 
-		for _, h := range Hosts {
-			for _, u := range Users {
-				for _, p := range Passes {
-					for _, po := range Ports {
-
+		for a, h := range Hosts {
+			for b, u := range Users {
+				for cc, p := range Passes {
+					for d, po := range Ports {
+						c.Place = strconv.Itoa(a+1) + "-" + strconv.Itoa(b+1) + "-" + strconv.Itoa(cc+1) + "-" + strconv.Itoa(d+1) + "END"
 						c.Host = h
 						c.Username = u
 						c.Password = p
@@ -209,6 +210,7 @@ func StartBruteForce(allConn *vars.AllConnections, msgSess, msgErr chan vars.Con
 		}
 		wg.Wait()
 		fmt.Println("END NEXT 3")
+		// knock.SendKnock("")
 		ClearList(allConn)
 	}
 	return foundSessions

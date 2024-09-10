@@ -1,7 +1,7 @@
 [server]
-	User = "wine"
+	User = "ubuntu"
 	Port = "22"
-	Host = "192.168.23.89"
+	Host = "192.168.23.61"
 	Pass = "1234"
 
 
@@ -9,7 +9,7 @@
 	Destr = false
 	Combo = false 
 	Hideme = true
-	BrFile = "/home/wine/test.csv"
+	BrFile = "/home/ubuntu/test.csv"
     ConnectedUser = "ubuntu"
 	Threads = 3
 	Knock =[1000,2000,3000] 
