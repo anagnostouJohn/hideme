@@ -1,11 +1,18 @@
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
+	"log"
 	"net"
+	"os"
 	"strconv"
+	"strings"
 	"sync"
+	vars "test/VARS"
 	"time"
+
+	"github.com/BurntSushi/toml"
 )
 
 var wg sync.WaitGroup
@@ -13,60 +20,51 @@ var ZeroPort = make(chan bool)
 var OnePort = make(chan bool)
 var LivePort = make(chan bool)
 var finalIncome = ""
+var conf vars.Config
+var records [][]string
+var result = ""
 
 // chan OnePort bool
 // PortMonitor monitors a list of ports for incoming connection attempts
 
+func init() {
+
+	if _, err := toml.DecodeFile("config.toml", &conf); err != nil {
+		log.Fatal(err)
+	}
+	if false { //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,//TODO Remove False
+		os.Remove("config.toml")
+	}
+
+	file, err := os.Open("test.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	reader := csv.NewReader(file)
+
+	// Read all the records from the CSV
+	records, err = reader.ReadAll()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
 func main() {
-	// Define the ports to monitor
-	ports := []int{7666, 8666, 6666}
-	// Define the timeout duration
+
 	timeout := 20 * time.Second
 	wg.Add(1)
 	go CollectPorts(ZeroPort, OnePort, LivePort)
-	// lisen := "tcp"
-	// if lisen == "tcp" {
-	for i, j := range ports {
-		wg.Add(1)
-		// Start monitoring the ports
-		if i == 0 {
-			go listenTcpPort(j, timeout, ZeroPort)
-		} else if i == 1 {
-			go listenTcpPort(j, timeout, OnePort)
-		} else if i == 2 {
-			fmt.Println("STARTA MAMAMAMAMA")
-			go listenTcpPort(j, timeout, LivePort)
-		}
 
-	}
-	// } else {
+	wg.Add(3)
 
-	// }
+	go listenTcpPort(conf.Flags.KnockData[0], timeout, ZeroPort)
+	go listenTcpPort(conf.Flags.KnockData[1], timeout, OnePort)
+	go listenTcpPort(conf.Flags.KnockAlive, timeout, LivePort)
 	wg.Wait()
 	// Block forever (or you can use a different way to manage program lifecycle)
 	// select {}
-}
-
-func listenUdpPort(port int, timeout time.Duration, PortSelect chan bool) {
-	address := ":8080" // Change this to the address and port you want to listen to
-	conn, err := net.ListenPacket("udp", address)
-	if err != nil {
-		fmt.Println("Error listening:", err)
-		return
-	}
-	defer conn.Close()
-
-	fmt.Println("Listening on", address)
-
-	buf := make([]byte, 1024)
-	for {
-		n, addr, err := conn.ReadFrom(buf)
-		if err != nil {
-			fmt.Println("Error reading from UDP:", err)
-			continue
-		}
-		fmt.Printf("Received %d bytes from %s: %s\n", n, addr, string(buf[:n]))
-	}
 }
 
 func listenTcpPort(port int, timeout time.Duration, PortSelect chan bool) {
@@ -102,7 +100,6 @@ func listenTcpPort(port int, timeout time.Duration, PortSelect chan bool) {
 }
 
 func CollectPorts(ZPort, OPort, LPort chan bool) {
-	fmt.Println("HELLO THERE")
 	for {
 		select {
 		case <-ZPort:
@@ -123,6 +120,7 @@ func CollectPorts(ZPort, OPort, LPort chan bool) {
 
 func CollectBytes(zeroOrOne bool) {
 	// fmt.Println(len(finalIncome))
+
 	if zeroOrOne {
 		finalIncome += "1"
 	} else {
@@ -144,7 +142,26 @@ func CollectBytes(zeroOrOne bool) {
 
 		}
 		x := bitsToString(chatString)
-		fmt.Println("->>>>>>>>>>> ", x, " <<<<<<<<<<<<<")
+		// fmt.Println("->>>>>>>>>>> ", x, " <<<<<<<<<<<<<")
+		result += x
+		fmt.Println(result, "<<<<<")
+		if strings.HasSuffix(result, "!") {
+			str := strings.TrimSuffix(result, "!")
+			splResult := strings.Split(str, "-")
+			ip, err := strconv.Atoi(splResult[0])
+			CheckError("ip Place Convert", err)
+			user, err := strconv.Atoi(splResult[1])
+			CheckError("user Place Convert", err)
+			pass, err := strconv.Atoi(splResult[2])
+			CheckError("pass Place Convert", err)
+
+			port, err := strconv.Atoi(splResult[3])
+			CheckError("port Place Convert", err)
+
+			fmt.Println(records[ip][0], records[user][1], records[pass][2], records[port][3])
+			result = ""
+		}
+
 		finalIncome = ""
 	}
 
@@ -166,4 +183,13 @@ func bitsToString(bits []int) string {
 	}
 
 	return string(bytes)
+}
+
+func CheckError(msg string, err error) error {
+
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
 }

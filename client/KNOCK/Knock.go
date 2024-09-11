@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	vars "test/VARS"
 	"time"
 )
 
-var ports = []int{7666, 8666, 6666}
+// var ports = []int{7666, 8666, 6666}
 
 // knock sends a TCP knock to a specific port on a host
 func knock(host string, port int, timeout time.Duration) error {
@@ -26,9 +27,9 @@ func knock(host string, port int, timeout time.Duration) error {
 }
 
 // sendKnocks sends a sequence of knocks to a host
-func sendData(host string, port int, delay time.Duration) {
+func SendData(host string, port int, delay time.Duration) {
 	// for _, port := range ports {
-	err := knock(host, ports[port], 5*time.Second)
+	err := knock(host, port, 5*time.Second)
 	if err != nil {
 		fmt.Printf("Failed to knock on port %d: %s\n", port, err)
 	} else {
@@ -41,48 +42,33 @@ func sendData(host string, port int, delay time.Duration) {
 }
 
 func SendIAmAlive(host string, port int, delay time.Duration) {
-	for {
-		fmt.Println("Send i am alive", host, port, delay)
-		knock(host, ports[port], delay)
-		time.Sleep(2 * time.Second)
-	}
+	// for {
+	fmt.Println("Send i am alive", host, port, delay)
+	knock(host, port, delay)
+	// time.Sleep(2 * time.Second)
+	// }
 
 }
 
-func SendKnock(data, host string) {
-	data = "1-833-2END" //TODO remove
-	// The host to knock on
-	host = "192.168.23.61" // TODO Replace with the actual IP or hostname
+func SendKnock(data string, conf vars.Config) {
 
-	// The sequence of ports to knock
-	// ports := []int{7666, 8666}
-
-	// Delay between knocks
 	delay := 500 * time.Millisecond
 	x := []string{}
-	// go SendIAmAlive(host, 2, delay)
+	byteArray := []byte(data)
 
-	// Convert string to bytes
-	byteArray := []byte(name)
-
-	fmt.Println("Bit representation of 'John':")
-
-	// Print each byte as bits
 	for _, b := range byteArray {
 		x = append(x, byteToBits(b))
-		// fmt.Printf("Character '%c' -> Bits: %s\n", name[i], byteToBits(b))
 	}
 	fmt.Println(x)
 	for _, j := range x {
 		for _, k := range j {
-			// char := rune(k)
 			char := fmt.Sprintf("%c", k)
-			// fmt.Println(char)
 			intValue, err := strconv.Atoi(char)
 			if err != nil {
 				fmt.Println(err)
 			}
-			sendData(host, intValue, delay)
+			p := conf.Flags.KnockData[intValue]
+			SendData(conf.Server.Host, p, delay)
 		}
 	}
 

@@ -1,98 +1,40 @@
-// package main
-
-// import (
-// 	"fmt"
-// 	"os"
-// 	"os/exec"
-// 	"strconv"
-// 	"strings"
-// 	"time"
-// )
-
-// // Function to get the parent process ID
-// func getParentProcessID(pid int) (int, error) {
-// 	cmd := exec.Command("ps", "-p", strconv.Itoa(pid), "-o", "ppid=")
-// 	output, err := cmd.Output()
-// 	if err != nil {
-// 		return 0, err
-// 	}
-
-// 	ppidStr := strings.TrimSpace(string(output))
-// 	ppid, err := strconv.Atoi(ppidStr)
-// 	if err != nil {
-// 		return 0, err
-// 	}
-
-// 	return ppid, nil
-// }
-
-// // Function to get the terminal name associated with a process ID
-// func getTerminalName(pid int) (string, error) {
-// 	cmd := exec.Command("ps", "-p", strconv.Itoa(pid), "-o", "tty=")
-// 	output, err := cmd.Output()
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	tty := strings.TrimSpace(string(output))
-// 	return tty, nil
-// }
-
-// func main() {
-// 	// Get the current process ID
-// 	pid := os.Getpid()
-
-// 	// Get the terminal name for the current process
-// 	AppPTYName, err := getTerminalName(pid)
-// 	if err != nil {
-// 		fmt.Printf("Error getting terminal name for PID %d: %v\n", pid, err)
-// 		return
-// 	}
-
-// 	// Get the parent process ID
-// 	ppid, err := getParentProcessID(pid)
-// 	if err != nil {
-// 		fmt.Printf("Error getting parent process ID for PID %d: %v\n", pid, err)
-// 		return
-// 	}
-
-// 	// Get the grandparent process ID
-// 	grandppid, err := getParentProcessID(ppid)
-// 	if err != nil {
-// 		fmt.Printf("Error getting grandparent process ID for PID %d: %v\n", ppid, err)
-// 		return
-// 	}
-
-// 	// Get the terminal name for the grandparent process
-// 	SSHPTYName, err := getTerminalName(grandppid)
-// 	if err != nil {
-// 		fmt.Printf("Error getting terminal name for grandparent PID %d: %v\n", grandppid, err)
-// 		return
-// 	}
-
-// 	// Get the original user if running with sudo
-// 	originalUser := os.Getenv("SUDO_USER")
-// 	if originalUser == "" {
-// 		fmt.Println("The command was not run using sudo or the SUDO_USER environment variable is not set.")
-// 	} else {
-// 		fmt.Printf("Original User: %s\n", originalUser)
-// 	}
-
-//		fmt.Printf("Terminal PID: %s Last Terminal PTY %s\n", SSHPTYName, AppPTYName)
-//		fmt.Println("Process Pid :", pid, "Parent Pid :", ppid, "Grand Parent Pid ", grandppid)
-//		time.Sleep(10 * time.Second)
-//	}
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
-	"strconv"
+	"log"
+	"os"
 )
 
 func main() {
-	ragre := []string{"a", "b", "c", "d", "e", "f"}
-	fmt.Println(len(ragre))
-	for i, g := range ragre[1:] {
-		f := strconv.Itoa(i+1) + "END"
-		fmt.Println(i, g, f)
+	// Open the CSV file
+	file, err := os.Open("rund.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	// Create a CSV reader
+	reader := csv.NewReader(file)
+
+	// Read all the records from the CSV
+	records, err := reader.ReadAll()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Check that we have enough records to access the required rows
+	if len(records) >= 20 {
+		// Accessing specific values:
+		firstColValue := records[1][0]  // 2nd value from the first column (index starts from 0)
+		secondColValue := records[8][1] // 9th value from the second column
+		thirdColValue := records[19][2] // 20th value from the third column
+
+		fmt.Println("2nd value from first column:", firstColValue)
+		fmt.Println("9th value from second column:", secondColValue)
+		fmt.Println("20th value from third column:", thirdColValue)
+	} else {
+		fmt.Println("Not enough rows in the CSV to access the desired values")
 	}
 }

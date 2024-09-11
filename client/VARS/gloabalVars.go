@@ -183,7 +183,8 @@ type AppFlags struct {
 	BrFile        string
 	ConnectedUser string
 	Threads       int
-	Knock         []int
+	KnockAlive    int
+	KnockData     []int
 }
 
 // flag.BoolVar(&vars.Destr, "d", false, "Self Destruct")

