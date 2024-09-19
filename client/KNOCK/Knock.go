@@ -68,7 +68,7 @@ func SendKnock(data string, conf vars.Config) {
 				fmt.Println(err)
 			}
 			p := conf.Flags.KnockData[intValue]
-			SendData(conf.Server.Host, p, delay)
+			SendData(conf.Client.Host, p, delay)
 		}
 	}
 

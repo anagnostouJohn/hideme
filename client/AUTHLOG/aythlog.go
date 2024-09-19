@@ -45,7 +45,7 @@ func DeleteSessionAndSudoeSyslogAuthlog(pattern string, FileToDelLines string) e
 
 }
 
-func DeleteLineAuthLogAndSyslog(filename string, dataToInf vars.DataToInfl) error {
+func DeleteLineAuthLogAndSyslog(filename string, dataToInf vars.ConnectedData) error {
 
 	file, err := os.ReadFile(filename)
 	if err != nil {
@@ -60,10 +60,10 @@ func DeleteLineAuthLogAndSyslog(filename string, dataToInf vars.DataToInfl) erro
 	}
 	IntlinesToDel := []int{}
 	exeName := filepath.Base(exePath)
-	p := fmt.Sprintf(`(?i)sshd\[%s\]:|sshd\[%s\]:|Started Session %s of User`, strconv.Itoa(dataToInf.ConData.FirstSpownID), strconv.Itoa(dataToInf.ConData.SSHPID), dataToInf.ConData.SessionNumber)
+	p := fmt.Sprintf(`(?i)sshd\[%s\]:|sshd\[%s\]:|Started Session %s of User`, strconv.Itoa(dataToInf.FirstSpownID), strconv.Itoa(dataToInf.SSHPID), dataToInf.SessionNumber)
 	// check.Check("error on creating Regex for sshd", err)
 	patternSSHID := regexp.MustCompile(p)
-	ps := fmt.Sprintf(`session-%s.scope|TTY=%s|TTY=%s|./%s|session opened|session closed|pam_unix(sshd:session):|Session %s logged out`, dataToInf.ConData.SessionNumber, dataToInf.ConData.AppPTY, dataToInf.ConData.SSHPTY, exeName, strconv.Itoa(dataToInf.ConData.SSHPID))
+	ps := fmt.Sprintf(`session-%s.scope|TTY=%s|TTY=%s|./%s|session opened|session closed|pam_unix(sshd:session):|Session %s logged out`, dataToInf.SessionNumber, dataToInf.AppPTY, dataToInf.SSHPTY, exeName, strconv.Itoa(dataToInf.SSHPID))
 	patternSecond := regexp.MustCompile(ps)
 
 	// patternsessionID := regexp.MustCompile(`sshd\[(\d+)\]`)

@@ -22,3 +22,6 @@ scp wine@192.168.23.89:/home/wine/Desktop/L.zip /home/ubuntu/go/src/test/
 
 scp ubuntu@192.168.23.61:/home/ubuntu/go/src/test/config.toml /tmp/
 scp ubuntu@192.168.23.61:/home/ubuntu/go/src/test/main /tmp/
+
+
+	command := fmt.Sprintf("echo -n %s >> hex.txt && xxd -r -p hex.txt > output_executable", j)

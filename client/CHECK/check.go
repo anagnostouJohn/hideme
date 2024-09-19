@@ -3,6 +3,8 @@ package check
 import (
 	"bufio"
 	"fmt"
+	"io"
+	"log"
 	"os"
 )
 
@@ -12,6 +14,22 @@ func Check(msg string, err error) error {
 		return err
 	}
 	return nil
+}
+
+func OpenAndReadFiles(filepath string) []byte {
+
+	file, err := os.Open(filepath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	// Read the file content
+	fileContent, err := io.ReadAll(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return fileContent
 }
 
 func Pouse() {

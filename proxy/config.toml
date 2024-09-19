@@ -1,7 +1,7 @@
-[server]
-	User = "ubuntu"
+[client]
+	User = "wine"
 	Port = "22"
-	Host = "192.168.23.61"
+	Host = "192.168.23.89"
 	Pass = "1234"
 
 

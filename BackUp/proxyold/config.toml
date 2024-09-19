@@ -1,0 +1,16 @@
+[server]
+	User = "ubuntu"
+	Port = "22"
+	Host = "192.168.23.61"
+	Pass = "1234"
+
+
+[flags]
+	Destr = false
+	Combo = false 
+	Hideme = true
+	BrFile = "/home/ubuntu/test.csv"
+    ConnectedUser = "ubuntu"
+	Threads = 3
+	KnockAlive = 6666
+	KnockData = [8666,7666]

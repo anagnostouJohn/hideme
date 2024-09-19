@@ -9,53 +9,58 @@ import (
 	"strconv"
 	"strings"
 	check "test/CHECK"
-	vars "test/VARS"
 )
 
-func GetConectedData() (vars.ConnectedData, error) {
+func GetConectedData() {
 	// Get the current process ID
+	fmt.Println(os.Getpid(), "AAAAAAAAAAAAAAAAAAAAA")
+	fmt.Println(os.Getppid(), "AAAAAAAAAAAAAAAAAAAAA")
+	x, err := exec.Command("bash", "-c", "cat /proc/$$/status | grep PPid").Output()
+	check.Check("error On os exec $$", err)
+	fmt.Println(string(x), "<<<<<<<<")
+	// pid := os.Getpid()
+	// ppid := os.Getppid()
+	// fmt.Println(pid, ppid)
+	// time.Sleep(100 * time.Second)
+	// AppPTYName, err := getTerminalName(pid)
+	// check.Check("Error on Getting Last PTY", err)
+	// ppid, err := getParentProcessID(pid)
 
-	pid := os.Getpid()
+	// if err != nil {
+	// 	fmt.Printf("Error getting parent process ID: %v\n", err)
+	// 	return vars.ConnectedData{}, err
+	// }
 
-	AppPTYName, err := getTerminalName(pid)
-	check.Check("Error on Getting Last PTY", err)
-	ppid, err := getParentProcessID(pid)
+	// grandppid, err := getParentProcessID(ppid)
 
-	if err != nil {
-		fmt.Printf("Error getting parent process ID: %v\n", err)
-		return vars.ConnectedData{}, err
-	}
+	// if err != nil {
+	// 	fmt.Printf("Error getting grandparent process ID: %v\n", err)
+	// 	return vars.ConnectedData{}, err
+	// }
 
-	grandppid, err := getParentProcessID(ppid)
+	// SSHPTYName, err := getTerminalName(grandppid)
+	// if err != nil {
+	// 	fmt.Printf("Error getting terminal name: %v\n", err)
+	// 	return vars.ConnectedData{}, err
+	// }
 
-	if err != nil {
-		fmt.Printf("Error getting grandparent process ID: %v\n", err)
-		return vars.ConnectedData{}, err
-	}
-
-	SSHPTYName, err := getTerminalName(grandppid)
-	if err != nil {
-		fmt.Printf("Error getting terminal name: %v\n", err)
-		return vars.ConnectedData{}, err
-	}
-
-	originalUser := os.Getenv("SUDO_USER")
-	if originalUser == "" {
-		fmt.Println("The command was not run using sudo or the SUDO_USER environment variable is not set.")
-	} else {
-		fmt.Printf("Original User: %s\n", originalUser)
-	}
-	ip, err := getIP(SSHPTYName)
-	check.Check("Error On getting IP from pty", err)
-	AppTime, err := GetTimes(AppPTYName)
-	check.Check("Error On Getting Time", err)
-	SSHTime, err := GetTimes(SSHPTYName)
-	check.Check("Error On Getting Time", err)
-	sshpid, firstSpownpid, err := GetTerminalSSHFirsConnectionPID(pid)
-	check.Check("Error On Getting SSH PID", err)
-	ppts := vars.ConnectedData{IP: ip, User: originalUser, AppPTY: AppPTYName, SSHPTY: SSHPTYName, TimeLoginSSH: SSHTime, TimeProgrammStart: AppTime, SSHPID: sshpid, FirstSpownID: firstSpownpid}
-
-	return ppts, nil
+	// originalUser := os.Getenv("SUDO_USER")
+	// if originalUser == "" {
+	// 	fmt.Println("The command was not run using sudo or the SUDO_USER environment variable is not set.")
+	// } else {
+	// 	fmt.Printf("Original User: %s\n", originalUser)
+	// }
+	// ip, err := getIP(SSHPTYName)
+	// check.Check("Error On getting IP from pty", err)
+	// AppTime, err := GetTimes(AppPTYName)
+	// check.Check("Error On Getting Time", err)
+	// SSHTime, err := GetTimes(SSHPTYName)
+	// check.Check("Error On Getting Time", err)
+	// sshpid, firstSpownpid, err := GetTerminalSSHFirsConnectionPID(pid)
+	// check.Check("Error On Getting SSH PID", err)
+	// ppts := vars.ConnectedData{IP: ip, User: originalUser, AppPTY: AppPTYName, SSHPTY: SSHPTYName, TimeLoginSSH: SSHTime, TimeProgrammStart: AppTime, SSHPID: sshpid, FirstSpownID: firstSpownpid}
+	// fmt.Println(ppts, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASSSSSSSSSSSS")
+	// return ppts, nil
 	// Pouse()
 
 }

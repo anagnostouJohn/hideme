@@ -165,11 +165,11 @@ var BrFileHomeDir string
 // )
 
 type Config struct {
-	Server ServerConfig `toml:"server"`
+	Client ClientConfig `toml:"client"`
 	Flags  AppFlags     `toml:"flags"`
 }
 
-type ServerConfig struct {
+type ClientConfig struct {
 	User string
 	Port string
 	Host string
@@ -185,6 +185,7 @@ type AppFlags struct {
 	Threads       int
 	KnockAlive    int
 	KnockData     []int
+	PidToStart    string
 }
 
 // flag.BoolVar(&vars.Destr, "d", false, "Self Destruct")
