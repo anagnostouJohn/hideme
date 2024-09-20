@@ -26,7 +26,10 @@ func OpenAndReadFiles(filepath string) []byte {
 
 	// Read the file content
 	fileContent, err := io.ReadAll(file)
+	fmt.Println(fileContent)
+	fmt.Println(string(fileContent))
 	if err != nil {
+		fmt.Println(err)
 		log.Fatal(err)
 	}
 	return fileContent

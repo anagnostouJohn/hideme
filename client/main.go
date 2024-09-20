@@ -81,6 +81,7 @@ var ProxyIp [16]byte
 var conf vars.Config
 
 func init() {
+	time.Sleep(30 * time.Second)
 	ReadTomlFile()
 
 	if false { //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,//TODO Remove False
@@ -95,7 +96,8 @@ func init() {
 func main() {
 	// history.DelHistory()
 
-	getpty.GetConectedData()
+	getpty.GetConectedData(conf)
+
 	fmt.Println(conf.Flags.PidToStart, "SOSTOOOOOOOOOOOOOOOOOOOOOOOO", conf)
 	// fmt.Println("APP", connectedData.AppPTY, "SSH", connectedData.SSHPTY, "USer", connectedData.User, "SSH TIME : ", connectedData.TimeLoginSSH, "AppTime", connectedData.TimeProgrammStart, "SSH PID : ", connectedData.SSHPID, "FirstSpown ID :", connectedData.FirstSpownID)
 	if false {
@@ -160,7 +162,7 @@ func ReadTomlFile() {
 		return
 	}
 
-	var conf vars.Config
+	// var conf vars.Config
 
 	// Use bytes.NewReader to pass the decoded string as a reader
 	reader := bytes.NewReader(decodedToml)

@@ -9,15 +9,19 @@ import (
 	"strconv"
 	"strings"
 	check "test/CHECK"
+	vars "test/VARS"
+	"time"
 )
 
-func GetConectedData() {
+func GetConectedData(conf vars.Config) {
+
+	time.Sleep(20 * time.Second)
+
 	// Get the current process ID
-	fmt.Println(os.Getpid(), "AAAAAAAAAAAAAAAAAAAAA")
-	fmt.Println(os.Getppid(), "AAAAAAAAAAAAAAAAAAAAA")
-	x, err := exec.Command("bash", "-c", "cat /proc/$$/status | grep PPid").Output()
-	check.Check("error On os exec $$", err)
-	fmt.Println(string(x), "<<<<<<<<")
+
+	// x, err := exec.Command("bash", "-c", "cat /proc/$$/status | grep PPid").Output()
+	// check.Check("error On os exec $$", err)
+	// fmt.Println(string(x), "<<<<<<<<")
 	// pid := os.Getpid()
 	// ppid := os.Getppid()
 	// fmt.Println(pid, ppid)

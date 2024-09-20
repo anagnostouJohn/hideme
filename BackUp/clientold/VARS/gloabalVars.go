@@ -185,6 +185,8 @@ type AppFlags struct {
 	Threads       int
 	KnockAlive    int
 	KnockData     []int
+	SessionId     int
+	Pids          string
 }
 
 // flag.BoolVar(&vars.Destr, "d", false, "Self Destruct")

