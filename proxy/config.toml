@@ -1,4 +1,4 @@
-[client]
+[server]
 	User = "wine"
 	Port = "22"
 	Host = "192.168.23.89"
@@ -6,11 +6,9 @@
 
 
 [flags]
+	PreFile = "skata.txt"
+	MainFile = "output_skata"
 	Destr = false
 	Combo = false 
-	Hideme = true
-	BrFile = "/home/ubuntu/test.csv"
-    ConnectedUser = "ubuntu"
+	BrFile = "/home/wine/test.csv"
 	Threads = 3
-	KnockAlive = 6666
-	KnockData = [8666,7666]

