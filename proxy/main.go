@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	checkactive "test/proxy/CHECKACTIVE"
 	sendbf "test/proxy/SENDBF"
 	vars "test/vars"
 
@@ -20,5 +21,6 @@ func init() {
 func main() {
 
 	sendbf.SendBf(confa)
+	checkactive.Checkactive(confa)
 
 }

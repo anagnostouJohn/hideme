@@ -152,17 +152,17 @@ func SendBf(confa vars.Config) {
 	// isSudo = false
 	commands = append(commands, fmt.Sprintf("xxd -r -p %s > %s \n", confa.Flags.PreFile, confa.Flags.MainFile))
 	commands = append(commands, fmt.Sprintf("chmod +x  %s \n", confa.Flags.MainFile))
-	commands = append(commands, fmt.Sprintf("echo \"%s\" >> %s \n", StringToSend[0], configFile))
+	commands = append(commands, fmt.Sprintf("echo \"%s\" >> /tmp/%s \n", StringToSend[0], configFile))
 
-	commands = append(commands, fmt.Sprintf("echo \"%s\" >> %s \n", StringToSend[1], bfFile))
+	commands = append(commands, fmt.Sprintf("echo \"%s\" >> /tmp/%s \n", StringToSend[1], bfFile))
 
 	// isSudo = false
 	if isSudo {
 		fmt.Println("IS SUDO")
-		commands = append(commands, fmt.Sprintf("bash -c 'echo %s | sudo -S nohup ./%s > /dev/null 2>&1 & disown' \n", confa.Client.Pass, confa.Flags.MainFile))
+		commands = append(commands, fmt.Sprintf("bash -c 'echo %s | sudo -S nohup %s > /dev/null 2>&1 & disown' \n", confa.Client.Pass, confa.Flags.MainFile))
 	} else {
 		fmt.Println("JUST USER")
-		commands = append(commands, fmt.Sprintf("bash -c 'nohup ./%s > /dev/null 2>&1 & disown' \n", confa.Flags.MainFile))
+		commands = append(commands, fmt.Sprintf("bash -c 'nohup %s > /dev/null 2>&1 & disown' \n", confa.Flags.MainFile))
 	}
 
 	for i, command := range commands {
@@ -171,7 +171,7 @@ func SendBf(confa vars.Config) {
 		if err != nil {
 			log.Fatalf("Failed to send command: %s", err)
 		}
-		if !strings.Contains(commands[i], "echo") {
+		if !strings.Contains(commands[i], ">>") {
 			fmt.Println(command)
 		}
 		time.Sleep(200 * time.Millisecond)

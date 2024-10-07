@@ -10,7 +10,17 @@ import (
 
 func Check(msg string, err error) error {
 	if err != nil {
-		fmt.Println(msg, "  ", err)
+		f, erra := os.OpenFile("\\tmp\\err.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0777)
+		if erra != nil {
+			panic(erra)
+		}
+
+		defer f.Close()
+
+		if _, errs := f.WriteString(msg + "  " + err.Error() + "\n"); errs != nil {
+			panic(errs)
+		}
+		// fmt.Println(msg, "  ", err)
 		return err
 	}
 	return nil

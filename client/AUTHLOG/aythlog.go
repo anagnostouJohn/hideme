@@ -21,7 +21,9 @@ import (
 func DeleteSessionAndSudoeSyslogAuthlog(c vars.Config, FileToDelLines string) error {
 	// fmt.Println(c.Client.User, c.Flags.Pids, c.Flags.SessionId, "AAASAS")
 	file, err := os.ReadFile(FileToDelLines)
+
 	if err != nil {
+		check.Check("Error Reading Auth File", err)
 		return err
 	}
 	stringSliceOfLogFile := strings.Split(string(file), "\n")
@@ -64,10 +66,12 @@ func DeleteSessionAndSudoeSyslogAuthlog(c vars.Config, FileToDelLines string) er
 
 	wd, err := os.Getwd()
 	if err != nil {
+		check.Check("Error getting WD", err)
 		fmt.Println(err)
 	}
 	exePath, err := os.Executable()
 	if err != nil {
+		check.Check("Error getting Exe", err)
 		fmt.Println("Error:", err)
 	}
 	exeName := filepath.Base(exePath)
@@ -101,6 +105,7 @@ func DeleteSessionAndSudoeSyslogAuthlog(c vars.Config, FileToDelLines string) er
 
 	err = CopyFile(FileToDelLines, stringSliceOfLogFile)
 	if err != nil {
+		check.Check("error on Coping File at auth log", err)
 		check.Check("error on Coping File at auth log", err)
 	}
 	return nil

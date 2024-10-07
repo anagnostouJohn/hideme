@@ -138,6 +138,7 @@ type ClientConfig struct {
 }
 
 type AppFlags struct {
+	WebHook   string
 	PreFile   string
 	MainFile  string
 	Destr     bool
