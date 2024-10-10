@@ -14,9 +14,9 @@ import (
 )
 
 var wg sync.WaitGroup
-
-var cur int64
-var prevCur int64
+var found = true
+var cur int64 = 0
+var prevCur int64 = 0
 
 func Checkactive(conf vars.Config) {
 	config := &ssh.ClientConfig{
@@ -39,7 +39,7 @@ func Checkactive(conf vars.Config) {
 	if err != nil {
 		log.Fatalf("Failed to create session: %s", err)
 	}
-
+	fmt.Println("sadasdasdasd")
 	defer session.Close()
 
 	stdin, err := session.StdinPipe()
@@ -50,8 +50,8 @@ func Checkactive(conf vars.Config) {
 	if err != nil {
 		log.Fatalf("Unable to setup stdout for session: %s", err)
 	}
-	wg.Add(1)
 
+	wg.Add(1)
 	go CheckStds(stdout)
 	defer stdin.Close()
 
@@ -60,10 +60,19 @@ func Checkactive(conf vars.Config) {
 	if err != nil {
 		log.Fatalf("Failed to start shell: %s", err)
 	}
+	for {
+		if found {
+			fmt.Println("Check", found)
+			err = session.Run("stat -c %x /tmp/c")
+			if err != nil {
+				check.Check("Error Sending Command", err)
+			}
+			time.Sleep(10 * time.Second)
+		} else {
+			fmt.Println("END")
+			break
+		}
 
-	err = session.Run("stat -c %x c")
-	if err != nil {
-		check.Check("Error Sending Command", err)
 	}
 	wg.Wait()
 
@@ -91,11 +100,14 @@ func CheckStds(stdout io.Reader) {
 
 		// Print the Unix epoch time
 		cur = epochTime
-		fmt.Println(cur)
-		if prevCur < cur {
-			cur = prevCur
+		fmt.Println(cur, prevCur)
+		if cur < prevCur {
+			fmt.Println("NOT OK")
+			prevCur = cur
 		} else if cur == prevCur {
 			fmt.Println("END RETREAVE")
+			found = false
+
 		}
 	}
 }

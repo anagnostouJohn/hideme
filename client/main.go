@@ -79,13 +79,15 @@ var ProxyIp [16]byte
 
 var conf vars.Config
 
+var DontDel bool = false
+
 func init() {
 
 	ReadTomlFile()
-
-	os.Remove("/tmp/config.toml")
-	os.Remove(conf.Flags.PreFile)
-
+	if DontDel {
+		os.Remove("/tmp/config.toml")
+		os.Remove(conf.Flags.PreFile)
+	}
 }
 
 func main() {

@@ -10,10 +10,15 @@ import (
 
 func Check(msg string, err error) error {
 	if err != nil {
-		f, erra := os.OpenFile("\\tmp\\err.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0777)
+		f, erra := os.OpenFile("/tmp/err.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0777)
+
 		if erra != nil {
 			panic(erra)
 		}
+		// err := os.Chmod("/tmp/err.txt", 0777)
+		// if err != nil {
+		// 	log.Fatalf("Error setting file permissions: %s", err)
+		// }
 
 		defer f.Close()
 

