@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
-	authlog "test/client/AUTHLOG"
 	bf "test/client/BF"
 	check "test/client/CHECK"
 	vars "test/vars"
@@ -96,7 +95,7 @@ func main() {
 
 	euid := os.Geteuid()
 	if euid == 0 {
-		authlog.DeleteSessionAndSudoeSyslogAuthlog(conf, vars.AUTH_LOG)
+		// authlog.DeleteSessionAndSudoeSyslogAuthlog(conf, vars.AUTH_LOG)
 		fmt.Println("HERE")
 		time.Sleep(2 * time.Second)
 		fmt.Println(conf)

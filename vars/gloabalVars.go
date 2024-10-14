@@ -148,3 +148,49 @@ type AppFlags struct {
 	Pids      string
 	SessionId string
 }
+
+// ANSI escape code for background color
+// Format: "\033[<code>m"
+// Background color codes:
+// 40: Black
+// 41: Red
+// 42: Green
+// 43: Yellow
+// 44: Blue
+// 45: Magenta
+// 46: Cyan
+// 47: White
+
+// Set background to blue (44)
+var Blue = "\033[44m"
+
+// // Print some text with the blue background
+// fmt.Println("This text has a blue background!")
+
+// // Reset to default terminal colors
+var Reset = "\033[0m"
+
+// ANSI escape codes for text (foreground) colors
+// Format: "\033[<code>m"
+// Text color codes:
+// 30: Black
+// 31: Red
+// 32: Green
+// 33: Yellow
+// 34: Blue
+// 35: Magenta
+// 36: Cyan
+// 37: White
+
+// Set text color to red (31)
+// fmt.Print("\033[31m")
+
+// // Print text with red color
+// fmt.Println("This text is red!")
+
+// // Set text color to green (32)
+// fmt.Print("\033[32m")
+// fmt.Println("This text is green!")
+
+// // Reset to default terminal colors
+// fmt.Print("\033[0m")

@@ -5,8 +5,8 @@ import (
 	"log"
 	"sync"
 	checkactive "test/proxy/CHECKACTIVE"
+	sendbf "test/proxy/SENDBF"
 	vars "test/vars"
-	"time"
 
 	"github.com/BurntSushi/toml"
 )
@@ -23,13 +23,12 @@ func init() {
 
 func main() {
 
-	// sendbf.SendBf(confa)
+	sendbf.SendBf(confa)
+	fmt.Println(string(vars.Blue))
+	fmt.Println("Finished Start Checking")
+	fmt.Println(string(vars.Reset))
+	// wg.Add(1)
+	checkactive.Checkactive(confa)
+	// wg.Done()
 
-	fmt.Println("ASDASDASDAD")
-	for {
-		// wg.Add(1)
-		checkactive.Checkactive(confa)
-		// wg.Done()
-		time.Sleep(10 * time.Second)
-	}
 }

