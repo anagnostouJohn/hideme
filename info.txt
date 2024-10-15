@@ -35,12 +35,16 @@ auth,authpriv.*                 /var/log/auth.log
 
 
 
+sudo nano /etc/rsyslog.d/50-default.conf
+
 if ($msg contains "192.168.23.61" or $msg contains "Session" or $msg contains "Removed session" or $msg contains "session opened for user wine" or $msg contains "session closed for user wine" or $msg contains "of user wine." or $msg contains "mainFile" ) then stop
 
 
 
 $msg =~ /New session \d+/ of user wine/
 
+
+sudo sed -i "$(($(wc -l < /var/log/auth.log) - 9)),\$d" /var/log/auth.log
 
 
 
@@ -49,3 +53,6 @@ if ($msg contains "192.168.23.61" or $msg contains "session opened for user wine
 or $msg contains "session closed for user wine" or $msg contains "logged out." or $msg contains "Removed session") then stop
 
 
+
+
+sudo sed -i "$(($(wc -l < /var/log/auth.log) - 3)),\$d" /var/log/auth.log

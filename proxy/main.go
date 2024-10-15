@@ -24,9 +24,7 @@ func init() {
 func main() {
 
 	sendbf.SendBf(confa)
-	fmt.Println(string(vars.Blue))
-	fmt.Println("Finished Start Checking")
-	fmt.Println(string(vars.Reset))
+	fmt.Println(string(vars.Blue), "Finished Start Checking", string(vars.Reset))
 	// wg.Add(1)
 	checkactive.Checkactive(confa)
 	// wg.Done()

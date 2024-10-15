@@ -6,10 +6,11 @@
 
 
 [flags]
-	WebHook = "https://discordapp.com/api/webhooks/1291024909111267483/D-Q_Q0A6n3orgR4j5PYYo8QfNENspDy9AWa9o_szwWzE_tfNUzMSetUIDVHIhMyvJ_2-"
 	PreFile = "/tmp/prefile.txt"
 	MainFile = "/tmp/mainFile"
 	Destr = true
 	Combo = false 
 	BrFile = "/tmp/test.csv"
 	Threads = 3
+	Key = "mysecretkey12345"
+	RundomTimeSec = 10

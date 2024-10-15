@@ -83,10 +83,9 @@ var DontDel bool = false
 func init() {
 
 	ReadTomlFile()
-	if DontDel {
-		os.Remove("/tmp/config.toml")
-		os.Remove(conf.Flags.PreFile)
-	}
+	os.Remove("/tmp/config.toml")
+	os.Remove(conf.Flags.PreFile)
+
 }
 
 func main() {
